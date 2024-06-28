@@ -25,3 +25,7 @@ router(app)
 app.listen(8080, () => {
   console.log('Server is running on http://localhost:8080')
 })
+
+//TODO: Test
+const hello = 'Hello'
+console.log(hello)

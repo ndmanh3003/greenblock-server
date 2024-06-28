@@ -4,8 +4,9 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --inspector index.js",
-    "beautify": "eslint --fix .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "beautify": "lint-staged",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
   },
   "author": "",
   "license": "ISC",
@@ -22,6 +23,8 @@
     "eslint": "^9.5.0",
     "eslint-config-prettier": "^9.1.0",
     "globals": "^15.6.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.7",
     "nodemon": "^3.1.4",
     "prettier": "^3.3.2",
     "ts-node": "^10.9.2",
@@ -35,5 +38,13 @@
     "express": "^4.19.2",
     "mongoose": "^8.4.4",
     "morgan": "^1.10.0"
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "prettier --write .",
+      "eslint --fix .",
+      "eslint --max-warnings 0 ."
+    ],
+    "*.{js,css,md}": "prettier --write"
   }
 }
