@@ -40,7 +40,7 @@
     "morgan": "^1.10.0"
   },
   "lint-staged": {
-    "*.{js,ts}": [
+    "*.{js,mjs,cjs,ts}": [
       "prettier --write .",
       "eslint --fix .",
       "eslint --max-warnings 0 ."
