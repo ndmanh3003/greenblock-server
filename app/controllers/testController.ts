@@ -11,7 +11,7 @@ const testController = {
     } catch (error) {
       res.status(400).json({ message: error.message })
     }
-  },
+  }
 }
 
 module.exports = testController

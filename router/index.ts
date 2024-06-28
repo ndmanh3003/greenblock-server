@@ -1,4 +1,4 @@
-const Application = require("express")
+const Application = require('express')
 const testRouter = require('./test')
 
 function router(app: typeof Application) {
