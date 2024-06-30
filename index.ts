@@ -13,11 +13,8 @@ const dotenv = require('dotenv')
 dotenv.config()
 
 //TODO: Connect to MongoDB
-const mongoose = require('mongoose')
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((err: Error) => console.log('Failed to connect to MongoDB', err))
+const db = require('./plugins/db')
+db()
 
 //TODO: Routes
 router(app)
