@@ -34,3 +34,21 @@ Ensure you have the following extensions installed:
    ```bash
    npm start
    ```
+   
+## Convention
+
+Follow git commit message convention:
+
+```
+type(scope): message
+```
+
+Types include:
+
+- feat: new feature
+- fix: bug fix
+- docs: changes in documentation
+- style: everything related to styling
+- refactor: code changes that neither fixes a bug nor adds a feature
+- test: everything related to testing
+- chore: updating tasks, etc; no production code change
