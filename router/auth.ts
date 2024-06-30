@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const authController = require('../app/controllers/authController')
+const verifyToken = require('../middleware/auth')
 
 // Register
 router.post('/register', authController.register)
@@ -10,7 +11,9 @@ router.put('/', authController.verifyAccount)
 // Get all deleted accounts
 router.get('/deleted', authController.getDeleted)
 // Logout
-// router.post('/logout', authController.logout)
+router.delete('/logout', verifyToken, authController.logout)
+// Refresh token
+router.post('/refresh', authController.refreshToken)
 // Get all accounts by role
 router.get('/:isBusiness', authController.getAccounts)
 

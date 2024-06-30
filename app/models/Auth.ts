@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 
 export interface IAuth {
+  _id: string
   name: string
   email: string
   password: string | undefined
@@ -10,6 +11,7 @@ export interface IAuth {
   farmers: string[] | null
   processors: string[] | null
   source: string[] | null
+  refreshToken: string | null
 }
 
 const authSchema = new mongoose.Schema(
@@ -49,7 +51,8 @@ const authSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Source'
       }
-    ]
+    ],
+    refreshToken: String
   },
   {
     timestamps: true

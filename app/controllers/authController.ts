@@ -1,3 +1,5 @@
+import refreshTokens from '../../utils/refreshTokens'
+
 const { Request, Response } = require('express')
 const { IAuth } = require('./../models/Auth')
 const { Auth } = require('../models')
@@ -7,9 +9,10 @@ const authController = {
   register: async (req: typeof Request, res: typeof Response) => {
     try {
       const newAuth = new Auth(req.body)
-      await newAuth.save()
+      const savedAuth = await newAuth.save()
+      const tokens = await refreshTokens(savedAuth)
 
-      res.status(201).json('OK')
+      res.status(201).json({ tokens })
     } catch (error) {
       res.status(400).json({ message: error.message })
     }
@@ -24,7 +27,9 @@ const authController = {
       })
       if (!auth) return res.status(400).json('Invalid credentials')
 
-      res.status(200).json(auth.email)
+      const tokens = await refreshTokens(auth)
+
+      res.status(200).json(tokens)
     } catch (error) {
       res.status(400).json({ message: error.message })
     }
@@ -68,6 +73,35 @@ const authController = {
       const accounts = await Auth.findDeleted()
 
       res.status(200).json(accounts)
+    } catch (error) {
+      res.status(400).json({ message: error.message })
+    }
+  },
+  // Logout
+  logout: async (req: typeof Request, res: typeof Response) => {
+    try {
+      console.log(req.userId)
+      const account = await Auth.findByIdAndUpdate(req.userId, { refreshToken: null })
+
+      if (!account) return res.status(400).json('Account not found')
+
+      res.sendStatus(204)
+    } catch (error) {
+      res.status(400).json({ message: error.message })
+    }
+  },
+  // Refresh token
+  refreshToken: async (req: typeof Request, res: typeof Response) => {
+    try {
+      const refreshToken = req.body.refreshToken
+      if (!refreshToken) return res.status(401).json('User not authenticated')
+
+      const account = await Auth.findOne({ refreshToken })
+      if (!account) return res.status(403).json('Invalid token')
+
+      const tokens = await refreshTokens(account)
+
+      res.status(200).json(tokens)
     } catch (error) {
       res.status(400).json({ message: error.message })
     }
