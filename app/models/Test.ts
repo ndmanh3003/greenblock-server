@@ -1,4 +1,4 @@
-import softDelete from '../../plugins/softDelete'
+import softDelete from '../../utils/softDelete'
 
 const mongoose = require('mongoose')
 

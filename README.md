@@ -24,6 +24,9 @@ Ensure you have the following extensions installed:
 
    ```env
    MONGODB_URI=mongodb+srv://admin:<password>@mybookstore.kzlnu4p.mongodb.net/?retryWrites=true&w=majority&appName=MyBookStore
+   PI_URL="https://volta-rpc.energyweb.org/"
+   PRIVATE_KEY="7cb2bae51e4fc736989c78555ece5b230f11d0ac0763e39a8d45e8d7795aa***"
+   CONTRACT_ADDRESS="0x5C61ee90f5099a0A2a7a01093df0F05298324***"
    ```
 
    Replace `<password>` with your actual MongoDB password.
@@ -34,7 +37,7 @@ Ensure you have the following extensions installed:
    ```bash
    npm start
    ```
-   
+
 ## Convention
 
 Follow git commit message convention:
