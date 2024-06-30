@@ -26,7 +26,7 @@ const testController = {
   // Get test by id
   getTestById: async (req: typeof Request, res: typeof Response) => {
     try {
-      const test = await Test.findById(req.params.id)
+      const test = await Test.findOneWithDeleted({ _id: req.params.id })
       res.status(200).json(test)
     } catch (error) {
       res.status(400).json({ message: error.message })
@@ -46,7 +46,7 @@ const testController = {
   // Delete test
   deleteTest: async (req: typeof Request, res: typeof Response) => {
     try {
-      await Test.findByIdAndDelete(req.params.id)
+      await Test.delete({ _id: req.params.id })
       res.status(200).json('Deleted successfully')
     } catch (error) {
       res.status(400).json({ message: error.message })
