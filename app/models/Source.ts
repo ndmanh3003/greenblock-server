@@ -1,8 +1,12 @@
 const mongoose = require('mongoose')
 
-const testSchema = new mongoose.Schema(
+const sourceSchema = new mongoose.Schema(
   {
     name: {
+      type: String,
+      required: true
+    },
+    type: {
       type: String,
       required: true
     }
@@ -12,4 +16,4 @@ const testSchema = new mongoose.Schema(
   }
 )
 
-module.exports = testSchema
+module.exports = sourceSchema
