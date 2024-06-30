@@ -9,8 +9,7 @@ const cors = require('cors')
 app.use(cors())
 const morgan = require('morgan')
 app.use(morgan('dev'))
-const dotenv = require('dotenv')
-dotenv.config()
+require('dotenv').config()
 
 //TODO: Connect to MongoDB
 const db = require('./plugins/db')
