@@ -65,11 +65,10 @@ const authController = {
   verifyAccount: async (req: typeof Request, res: typeof Response) => {
     try {
       // 1 is verified, 0 is deleted
-      const account = await Auth.findOne({ _id: req.body.id, refreshToken: req.body.refreshToken })
+      const account = await Auth.findOne({ _id: req.body.id, refreshToken: req.body.refreshToken, isVerified: 0 })
       if (!account) return res.status(400).json('Account not found')
-      else if (!req.body.isVerified) {
-        await account.delete()
-      } else {
+      else if (!req.body.isVerified) await account.delete()
+      else {
         account.isVerified = true
         await account.save()
       }
@@ -92,7 +91,6 @@ const authController = {
   // Logout
   logout: async (req: typeof Request, res: typeof Response) => {
     try {
-      console.log(req.userId)
       const account = await Auth.findByIdAndUpdate(req.userId, { refreshToken: null })
 
       if (!account) return res.status(400).json('Account not found')

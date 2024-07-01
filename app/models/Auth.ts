@@ -8,9 +8,6 @@ export interface IAuth {
   isBusiness: boolean
   isVerified: boolean
   cert: string
-  farmers: string[] | null
-  processors: string[] | null
-  source: string[] | null
   refreshToken: string | null
 }
 
@@ -44,14 +41,6 @@ const authSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    farmers: [String],
-    processors: [String],
-    source: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Source'
-      }
-    ],
     refreshToken: String
   },
   {
