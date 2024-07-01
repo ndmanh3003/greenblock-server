@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken')
 const { Auth } = require('../app/models')
 require('dotenv').config()
 
-const verifyToken = async (req: typeof Request, res: typeof Response, next: typeof NextFunction) => {
+const verifyToken = async (req: typeof Request, res: typeof Response, next?: typeof NextFunction) => {
   const authHeader = req.header('Authorization')
   const token = authHeader && authHeader.split(' ')[1]
 
@@ -17,7 +17,9 @@ const verifyToken = async (req: typeof Request, res: typeof Response, next: type
     if (!account.isVerified) return res.status(401).json('Account not verified')
     if (!account.refreshToken) return res.status(401).json('Access denied')
 
-    next()
+    req.isBusiness = account.isBusiness
+
+    if (next) next()
   } catch (error) {
     return res.status(400).json({ message: error.message })
   }

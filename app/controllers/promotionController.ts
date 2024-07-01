@@ -21,8 +21,9 @@ const promotionController = {
   updatePromotion: async (req: typeof Request, res: typeof Response) => {
     try {
       const { id, ...updateData } = req.body
-      const promotion = await Promotion.findByIdAndUpdate(id, updateData)
+      const promotion = await Promotion.findOne({ _id: id, business: req.userId })
       if (!promotion) res.status(404).json('Promotion not found')
+      await promotion.updateOne(updateData)
 
       res.status(200).json('OK')
     } catch (error) {
@@ -36,7 +37,7 @@ const promotionController = {
       if (!promotion) res.status(404).json('Promotion not found')
       await promotion.delete()
 
-      res.status(200).json('OK')
+      res.sendStatus(204)
     } catch (error) {
       res.status(400).json({ message: error.message })
     }
