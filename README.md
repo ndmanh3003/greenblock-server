@@ -29,6 +29,7 @@ Ensure you have the following extensions installed:
    CONTRACT_ADDRESS="0x5C61ee90f5099a0A2a7a01093df0F05298324***"
    ACCESS_TOKEN_SECRET=<password>
    REFRESH_TOKEN_SECRET=<password>
+   ADMIN_PASSWORD=<password>
    ```
 
    Replace `<password>` with your actual MongoDB password.

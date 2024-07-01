@@ -1,8 +1,8 @@
-import refreshTokens from '../../utils/refreshTokens'
-
+const { refreshTokens } = require('../../utils/refreshTokens')
 const { Request, Response } = require('express')
 const { IAuth } = require('./../models/Auth')
 const { Auth } = require('../models')
+require('dotenv').config()
 
 const authController = {
   // Register
@@ -10,6 +10,7 @@ const authController = {
     try {
       const newAuth = new Auth(req.body)
       const savedAuth = await newAuth.save()
+
       const tokens = await refreshTokens(savedAuth)
 
       res.status(201).json({ tokens })
@@ -37,12 +38,23 @@ const authController = {
   // Get all accounts by role
   getAccounts: async (req: typeof Request, res: typeof Response) => {
     try {
-      const accounts = await Auth.find({ isBusiness: req.params.isBusiness })
-      //Hide all passwords
-      accounts.map((account: typeof IAuth) => {
-        account.password = undefined
-        return account
-      })
+      let accounts = await Auth.find({ isBusiness: req.params.isBusiness })
+
+      if (req.body.admin == process.env.ADMIN_PASSWORD) return res.status(200).json(accounts)
+      else if (req.body.admin) return res.status(401).json('Unauthorized')
+
+      // Filter only verified accounts
+      accounts = accounts
+        .filter((account: typeof IAuth) => account.isVerified)
+        .map((account: typeof IAuth) => {
+          return {
+            _id: account._id,
+            email: account.email,
+            isBusiness: account.isBusiness,
+            isVerified: account.isVerified,
+            cert: account.cert
+          }
+        })
 
       res.status(200).json(accounts)
     } catch (error) {
@@ -53,7 +65,7 @@ const authController = {
   verifyAccount: async (req: typeof Request, res: typeof Response) => {
     try {
       // 1 is verified, 0 is deleted
-      const account = await Auth.findById(req.body.id)
+      const account = await Auth.findOne({ _id: req.body.id, refreshToken: req.body.refreshToken })
       if (!account) return res.status(400).json('Account not found')
       else if (!req.body.isVerified) {
         await account.delete()
