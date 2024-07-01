@@ -13,10 +13,10 @@ const verifyToken = async (req: typeof Request, res: typeof Response, next: type
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
     req.userId = decoded._id
 
-    // Check logout
     const account = await Auth.findById(req.userId)
-
+    if (!account.isVerified) return res.status(401).json('Account not verified')
     if (!account.refreshToken) return res.status(401).json('Access denied')
+
     next()
   } catch (error) {
     return res.status(400).json({ message: error.message })

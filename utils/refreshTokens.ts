@@ -7,7 +7,9 @@ interface ITokenAuth {
 }
 
 export async function refreshTokens(account: typeof IAuth & ITokenAuth) {
-  const { _id, email } = account
+  const { _id, email, isVerified } = account
+
+  if (!isVerified) throw new Error('Account not verified')
 
   const accessToken = jwt.sign({ _id, email }, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: '10h'
