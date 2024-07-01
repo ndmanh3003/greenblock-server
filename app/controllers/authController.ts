@@ -9,11 +9,9 @@ const authController = {
   register: async (req: typeof Request, res: typeof Response) => {
     try {
       const newAuth = new Auth(req.body)
-      const savedAuth = await newAuth.save()
+      await newAuth.save()
 
-      const tokens = await refreshTokens(savedAuth)
-
-      res.status(201).json({ tokens })
+      res.status(201).json('OK')
     } catch (error) {
       res.status(400).json({ message: error.message })
     }
@@ -27,6 +25,7 @@ const authController = {
         isBusiness: req.body.isBusiness
       })
       if (!auth) return res.status(400).json('Invalid credentials')
+      if (!auth.isVerified) return res.status(401).json('Account not verified')
 
       const tokens = await refreshTokens(auth)
 
@@ -40,8 +39,10 @@ const authController = {
     try {
       let accounts = await Auth.find({ isBusiness: req.params.isBusiness })
 
-      if (req.body.admin == process.env.ADMIN_PASSWORD) return res.status(200).json(accounts)
-      else if (req.body.admin) return res.status(401).json('Unauthorized')
+      if (req.body.admin == process.env.ADMIN_PASSWORD) {
+        accounts = accounts.filter((account: typeof IAuth) => !account.isVerified)
+        return res.status(200).json(accounts)
+      } else if (req.body.admin) return res.status(401).json('Unauthorized')
 
       // Filter only verified accounts
       accounts = accounts
@@ -65,12 +66,14 @@ const authController = {
   verifyAccount: async (req: typeof Request, res: typeof Response) => {
     try {
       // 1 is verified, 0 is deleted
-      const account = await Auth.findOne({ _id: req.body.id, refreshToken: req.body.refreshToken, isVerified: 0 })
+      console.log(req.body.id, req.body.password)
+      const account = await Auth.findOne({ _id: req.body.id, password: req.body.password, isVerified: 0 })
       if (!account) return res.status(400).json('Account not found')
       else if (!req.body.isVerified) await account.delete()
       else {
         account.isVerified = true
         await account.save()
+        await refreshTokens(account)
       }
 
       res.status(200).json('OK')
