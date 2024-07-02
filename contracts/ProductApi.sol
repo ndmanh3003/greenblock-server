@@ -43,7 +43,7 @@ contract ProductApi {
     _;
   }
 
-  event ProductCreated(uint256 productId);
+  event ProductCreated(uint256 id);
 
   function createProduct(
     string memory _name,
@@ -58,25 +58,25 @@ contract ProductApi {
     Account memory business = Account(_businessId, _businessName);
     Account memory inspector = Account(_inspectorId, _inspectorName);
 
-    Product storage newProduct = products.push();
+    Product storage product = products.push();
 
     // from input
-    newProduct.business = business;
-    newProduct.inspector = inspector;
-    newProduct.name = _name;
-    newProduct.variety = _variety;
-    newProduct.location = _location;
-    newProduct.plantAt = block.timestamp;
-    newProduct.desc = _desc;
+    product.business = business;
+    product.inspector = inspector;
+    product.name = _name;
+    product.variety = _variety;
+    product.location = _location;
+    product.plantAt = block.timestamp;
+    product.desc = _desc;
     // others
-    newProduct.historyCount = 0;
-    newProduct.imgCert = '';
-    newProduct.harvest = Status(0, '', new string[](0));
-    newProduct.export = Status(0, '', new string[](0));
+    product.historyCount = 0;
+    product.imgCert = '';
+    product.harvest = Status(0, '', new string[](0));
+    product.export = Status(0, '', new string[](0));
 
     // emit event
-    uint256 lastProductId = products.length - 1;
-    emit ProductCreated(lastProductId);
+    uint256 id = products.length - 1;
+    emit ProductCreated(id);
   }
 
   function handleStatus(uint256 _index, string memory _desc, string[] memory _img, uint256 _type) public onlyOwner {
@@ -84,20 +84,31 @@ contract ProductApi {
     require(_index < products.length, 'Invalid product index');
 
     Status memory status = Status(block.timestamp, _desc, _img);
-    Product storage productSelected = products[_index];
+    Product storage product = products[_index];
 
     // 0: history, 1: harvest, 2: export, 3: delete
-    if (_type == 0) productSelected.history[productSelected.historyCount++] = status;
-    else if (_type == 1) productSelected.harvest = status;
-    else if (_type == 2) productSelected.export = status;
+    if (_type == 0) product.history[product.historyCount++] = status;
+    else if (_type == 1) product.harvest = status;
+    else if (_type == 2) product.export = status;
     else {
-      require(productSelected.historyCount > 0, 'No status to delete');
+      require(product.historyCount > 0, 'No status to delete');
 
-      uint256 time = block.timestamp - productSelected.history[productSelected.historyCount - 1].time;
-
+      uint256 time = block.timestamp - product.history[product.historyCount - 1].time;
       require(time < (2 * 24 * 60 * 60), 'We can only delete the latest status within 2 days');
-      delete productSelected.history[--productSelected.historyCount];
+
+      delete product.history[--product.historyCount];
     }
+  }
+
+  function getType(uint256 _index) public view returns (uint256) {
+    // 0: planting, 1: harvested, 2: inspected, 3: exported
+    require(_index < products.length, 'Invalid product index');
+
+    Product storage product = products[_index];
+    if (product.harvest.time == 0) return 0; // farmer
+    if (product.export.time == 0 && keccak256(abi.encodePacked(product.imgCert)) == 0) return 1; // inspector
+    if (product.export.time == 0) return 2; // processor
+    return 3; // consumer
   }
 
   function updateProduct(
@@ -105,38 +116,43 @@ contract ProductApi {
     string memory _name,
     string memory _variety,
     string memory _location,
-    string memory _inspectorName,
-    string memory _inspectorId,
     string memory _desc,
     string memory _imgCert
   ) public onlyOwner {
     require(_index < products.length, 'Invalid product index');
 
-    if (bytes(_name).length != 0) products[_index].name = _name;
-    if (bytes(_variety).length != 0) products[_index].variety = _variety;
-    if (bytes(_location).length != 0) products[_index].location = _location;
-    if (bytes(_inspectorName).length != 0 && bytes(_inspectorId).length != 0)
-      products[_index].inspector = Account(_inspectorId, _inspectorName);
-    if (bytes(_desc).length != 0) products[_index].desc = _desc;
-    if (bytes(_imgCert).length != 0) products[_index].imgCert = _imgCert;
+    Product storage product = products[_index];
+
+    if (bytes(_name).length != 0) product.name = _name;
+    if (bytes(_variety).length != 0) product.variety = _variety;
+    if (bytes(_location).length != 0) product.location = _location;
+    if (bytes(_desc).length != 0) product.desc = _desc;
+    if (bytes(_imgCert).length != 0) product.imgCert = _imgCert;
   }
 
-  function getProducts(string memory _accountId, uint256 _role) public view returns (uint256[] memory) {
-    require(_role < 2, 'Invalid account type');
+  function getProducts(
+    string memory _accountId,
+    uint256 _isBusiness,
+    uint256 _isFarmer
+  ) public view returns (uint256[] memory) {
+    require(_isBusiness < 2, 'Invalid account type');
 
     uint256[] memory result = new uint256[](products.length);
     uint256 count = 0;
 
-    // 0: business, 1: inspector
-    if (_role == 0) {
+    if (_isBusiness == 1) {
       for (uint256 i = 0; i < products.length; i++) {
-        if (keccak256(abi.encodePacked(products[i].business.id)) == keccak256(abi.encodePacked(_accountId)))
+        if (keccak256(abi.encodePacked(products[i].business.id)) == keccak256(abi.encodePacked(_accountId))) {
+          if ((_isFarmer == 1 && getType(i) != 0) || (_isFarmer == 0 && getType(i) != 2)) continue;
           result[count++] = i;
+        }
       }
     } else {
       for (uint256 i = 0; i < products.length; i++) {
-        if (keccak256(abi.encodePacked(products[i].inspector.id)) == keccak256(abi.encodePacked(_accountId)))
-          result[count++] = i;
+        if (
+          getType(i) != 0 &&
+          keccak256(abi.encodePacked(products[i].inspector.id)) == keccak256(abi.encodePacked(_accountId))
+        ) result[count++] = i;
       }
     }
 
@@ -168,25 +184,25 @@ contract ProductApi {
   {
     require(_index < products.length, 'Invalid product index');
 
-    Product storage productSelected = products[_index];
+    Product storage product = products[_index];
 
-    uint256 count = productSelected.historyCount;
-    Status[] memory getHistory = new Status[](count);
-    for (uint256 i = 0; i < count; i++) getHistory[i] = productSelected.history[i];
+    uint256 count = product.historyCount;
+    Status[] memory history = new Status[](count);
+    for (uint256 i = 0; i < count; i++) history[i] = product.history[i];
 
     return (
-      productSelected.business,
-      productSelected.inspector,
-      productSelected.name,
-      productSelected.variety,
-      productSelected.location,
-      productSelected.plantAt,
-      getHistory,
-      productSelected.historyCount,
-      productSelected.harvest,
-      productSelected.export,
-      productSelected.imgCert,
-      productSelected.desc
+      product.business,
+      product.inspector,
+      product.name,
+      product.variety,
+      product.location,
+      product.plantAt,
+      history,
+      product.historyCount,
+      product.harvest,
+      product.export,
+      product.imgCert,
+      product.desc
     );
   }
 }
