@@ -106,7 +106,7 @@ contract ProductApi {
 
     Product storage product = products[_index];
     if (product.harvest.time == 0) return 0; // farmer
-    if (product.export.time == 0 && keccak256(abi.encodePacked(product.imgCert)) == 0) return 1; // inspector
+    if (keccak256(abi.encodePacked(product.imgCert)) == keccak256(abi.encodePacked(''))) return 1; // inspector
     if (product.export.time == 0) return 2; // processor
     return 3; // consumer
   }
