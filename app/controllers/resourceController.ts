@@ -21,9 +21,9 @@ const resourceController = {
   // Get resource
   getResource: async (req: typeof Request, res: typeof Response) => {
     try {
-      const resource = await Resource.findOne({ business: req.userId })
+      let resource = await Resource.findOne({ business: req.userId })
       if (!resource) {
-        await Resource.create({ business: req.userId })
+        resource = await Resource.create({ business: req.userId })
       }
 
       res.status(200).json(resource[_type[req.params.type]])
