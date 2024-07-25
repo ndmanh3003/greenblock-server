@@ -6,67 +6,71 @@ const verifyToken = require('../../middleware/auth')
 const { Resource, Auth } = require('../models')
 
 const productController = {
-  // Get all products with roles: business, inspector, employee
-  getProducts: async (req: typeof Request, res: typeof Response) => {
+  async getProducts(req: typeof Request, res: typeof Response) {
     try {
-      let products
+      let userId, isBusiness
+
       if (req.header('Authorization')) {
         await verifyToken(req, res)
+
+        isBusiness = Number(req.isBusiness)
+        userId = req.userId
         req.body.isFarmer = 2
       } else {
         const resource = await Resource.findOne({ business: req.body.businessId })
         const isEmployee = req.body.isFarmer
           ? resource.farmers.includes(req.body.phone)
           : resource.processors.includes(req.body.phone)
-        if (!isEmployee) return res.status(403).send('You are not a employee')
-        req.isBusiness = 1
+        if (!isEmployee) return res.status(403).json({ message: 'Access denied: Not an employee' })
+
+        userId = req.body.businessId
+        isBusiness = 1
       }
-      products = await contractInstance.getProducts(
-        req.userId || req.body.businessId,
-        Number(req.isBusiness),
-        Number(req.body.isFarmer)
-      )
-      products = products.map((index: typeof IBigNumber) => toNumber(index))
-      const productDetails = []
-      for (let i = 0; i < products.length; i++) productDetails.push(await getDetail(products[i]))
 
-      return res.status(200).send(productDetails)
+      const productIds = await contractInstance.getProducts(userId, isBusiness, Number(req.body.isFarmer))
+      const products = await Promise.all(productIds.map((id: typeof IBigNumber) => getDetail(toNumber(id))))
+
+      return res.status(200).json({ message: 'Products retrieved successfully', data: products })
     } catch (error) {
-      res.status(400).send(error.message)
+      return res.status(500).json({ message: 'Failed to retrieve products', error: error.message })
     }
   },
-  // Get product by id with roles: consumer
-  getProductById: async (req: typeof Request, res: typeof Response) => {
-    try {
-      const typeProduct = await contractInstance.getType(req.params.id)
-      if (typeProduct != 3) return res.status(400).send('This product is not traceable for trading')
-      const product = await getDetail(req.params.id)
 
-      return res.status(200).send(product)
+  async getProductById(req: typeof Request, res: typeof Response) {
+    try {
+      const productId = req.params.id
+      const product = await getDetail(productId)
+
+      if (product.type != 'exported')
+        return res.status(400).json({ message: 'This product is not traceable for trading' })
+
+      return res.status(200).json({ message: 'Product retrieved successfully', data: product })
     } catch (error) {
-      res.status(400).send(error.message)
+      return res.status(500).json({ message: 'Failed to retrieve product', error: error.message })
     }
   },
-  // Create a new product with role: business
-  createProduct: async (req: typeof Request, res: typeof Response) => {
+
+  async createProduct(req: typeof Request, res: typeof Response) {
     try {
+      const { name, variety, location, inspectorId, desc } = req.body
       const business = await Auth.findById(req.userId)
       const inspector = await Auth.findOne({
-        _id: req.body.inspectorId,
+        _id: inspectorId,
         isBusiness: false,
         isVerified: true
       })
 
-      if (!inspector) return res.status(400).send('Inspector not found')
+      if (!inspector) return res.status(400).json({ message: 'Inspector not found or not verified' })
+
       const tx = await contractInstance.createProduct(
-        req.body.name,
-        req.body.variety,
-        req.body.location,
+        name,
+        variety,
+        location,
         business.name,
         req.userId,
         inspector.name,
-        req.body.inspectorId,
-        req.body.desc
+        inspectorId,
+        desc
       )
       const receipt = await tx.wait()
       const event = receipt.events.find(
@@ -74,67 +78,85 @@ const productController = {
       )
       const productId = toNumber(event.args[0])
 
-      res.status(200).json(productId)
+      return res.status(201).json({ message: 'Product created successfully', data: { productId } })
     } catch (error) {
-      res.status(400).send(error.message)
+      return res.status(500).json({ message: 'Failed to create product', error: error.message })
     }
   },
-  // Update product with roles: business, inspector
-  updateProduct: async (req: typeof Request, res: typeof Response) => {
+
+  async updateProduct(req: typeof Request, res: typeof Response) {
     try {
-      const product = await getDetail(req.body.id)
+      const { id, name, variety, location, desc, imgCert } = req.body
+      const product = await getDetail(id)
+
       if (req.isBusiness) {
-        if (product.business.id !== req.userId) return res.status(400).send('This product does not belong to you')
-        if (req.body.imgCert) return res.status(400).send('You can not update image certificate')
-      }
-      if (!req.isBusiness && product.inspector.id !== req.userId)
-        return res.status(400).send('You are not allowed to inspect this product')
+        if (product.business.id !== req.userId)
+          return res.status(403).json({ message: 'Access denied: Product does not belong to you' })
+        if (imgCert) return res.status(400).json({ message: 'Business users cannot update certificate images' })
+      } else if (product.inspector.id !== req.userId)
+        return res.status(403).json({ message: 'Access denied: Not authorized to update this product' })
 
       const tx = await contractInstance.updateProduct(
-        req.body.id,
-        req.body.name || '',
-        req.body.variety || '',
-        req.body.location || '',
-        req.body.desc || '',
-        req.body.imgCert || ''
+        id,
+        name || '',
+        variety || '',
+        location || '',
+        desc || '',
+        imgCert || ''
       )
       await tx.wait()
 
-      res.status(200).json('OK')
+      return res.status(200).json({ message: 'Product updated successfully' })
     } catch (error) {
-      res.status(400).send(error.message)
+      return res.status(500).json({ message: 'Failed to update product', error: error.message })
     }
   },
-  // Handle stauts with 4 types: 0: history, 1: harvest, 2: export, 3: delete
-  handleStatus: async (req: typeof Request, res: typeof Response) => {
+
+  async handleStatus(req: typeof Request, res: typeof Response) {
     try {
-      if ((req.body.isFarmer && req.body.type == 2) || (!req.body.isFarmer && req.body.type != 2))
-        return res.status(400).send('Your action is not allowed')
+      //! Product: 0: planting, 1: harvested, 2: inspected, 3: exported
+      //! Action: 0: history, 1: harvest, 2: export, 3: delete
 
-      if (req.body.type == 2) {
-        const typeProduct = await contractInstance.getType(req.body.productId)
-        if (typeProduct != 2) return res.status(400).send('This product is not exportable or has already been exported')
+      const { productId, businessId, isFarmer, phone, type: typeAction, desc, img } = req.body
+
+      // Check action type
+      if ((isFarmer && typeAction === 2) || (!isFarmer && typeAction !== 2))
+        return res.status(400).json({ message: 'Invalid operation for user type' })
+
+      // Check status type
+      const productType = await contractInstance.getType(productId)
+      if (
+        (typeAction === 0 && productType != 0) ||
+        (typeAction === 1 && productType != 0) ||
+        (typeAction === 2 && productType != 2) ||
+        (typeAction === 3 && productType != 0)
+      )
+        return res.status(400).json({ message: 'This operation is not allowed for the current status' })
+
+      // Check employee access
+      const resource = await Resource.findOne({ business: businessId })
+      const isEmployee = isFarmer ? resource.farmers.includes(phone) : resource.processors.includes(phone)
+
+      if (!isEmployee) return res.status(403).json({ message: 'Access denied: Not an employee' })
+
+      // Check product ownership
+      const product = await getDetail(productId)
+      if (product.business.id !== businessId) {
+        return res.status(403).json({ message: 'Access denied: Product does not belong to your company' })
       }
-      const resource = await Resource.findOne({ business: req.body.businessId })
-      const isEmployee = req.body.isFarmer
-        ? resource.farmers.includes(req.body.phone)
-        : resource.processors.includes(req.body.phone)
-      if (!isEmployee) return res.status(403).send('You are not a employee')
 
-      const product = await getDetail(req.body.productId)
-      if (product.business.id != req.body.businessId)
-        return res.status(400).send('This product does not belong to your company')
-
-      if (req.body.type == 3) {
-        req.body.desc = ''
-        req.body.img = []
+      // Update status
+      const statusData = {
+        desc: typeAction === 3 ? '' : desc,
+        img: typeAction === 3 ? [] : img
       }
-      const tx = await contractInstance.handleStatus(req.body.productId, req.body.desc, req.body.img, req.body.type)
+
+      const tx = await contractInstance.handleStatus(productId, statusData.desc, statusData.img, typeAction)
       await tx.wait()
 
-      res.status(200).json('OK')
+      return res.status(200).json({ message: 'Status updated successfully' })
     } catch (error) {
-      res.status(400).send(error.message)
+      return res.status(500).json({ message: 'Failed to update status', error: error.message })
     }
   }
 }

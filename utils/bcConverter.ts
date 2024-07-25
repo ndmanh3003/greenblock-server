@@ -18,9 +18,7 @@ export function toNumber(num: IBigNumber) {
 }
 
 export function toDate(timestamp: IBigNumber) {
-  return new Date(toNumber(timestamp) * 1000).toLocaleString('en-US', {
-    timeZone: 'Asia/Ho_Chi_Minh'
-  })
+  return new Date(toNumber(timestamp) * 1000)
 }
 
 export function toStatus(_status: I_Status) {

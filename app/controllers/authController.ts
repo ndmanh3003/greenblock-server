@@ -5,118 +5,108 @@ const { Auth } = require('../models')
 require('dotenv').config()
 
 const authController = {
-  // Register
   register: async (req: typeof Request, res: typeof Response) => {
     try {
       const newAuth = new Auth(req.body)
       await newAuth.save()
 
-      res.status(201).json('OK')
+      return res.status(201).json({ message: 'Registration successful' })
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(400).json({ message: 'Registration failed', error: error.message })
     }
   },
-  // Login with email, password and role
+
   login: async (req: typeof Request, res: typeof Response) => {
     try {
-      const auth = await Auth.findOne({
-        email: req.body.email,
-        password: req.body.password,
-        isBusiness: req.body.isBusiness
-      })
-      if (!auth) return res.status(400).json('Invalid credentials')
-      if (!auth.isVerified) return res.status(401).json('Account not verified')
+      const { email, password, isBusiness } = req.body
+      const auth = await Auth.findOne({ email, password, isBusiness })
+
+      if (!auth) return res.status(400).json({ message: 'Invalid credentials' })
+      if (!auth.isVerified) return res.status(401).json({ message: 'Account not verified' })
 
       const tokens = await refreshTokens(auth)
 
-      res.status(200).json(tokens)
+      return res.status(200).json({
+        message: 'Login successful',
+        data: { name: auth.name, isBusiness: auth.isBusiness, ...tokens }
+      })
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(500).json({ message: 'Login failed', error: error.message })
     }
   },
-  // Get all accounts by role
+
   getAccounts: async (req: typeof Request, res: typeof Response) => {
     try {
-      let accounts = await Auth.find({ isBusiness: req.params.isBusiness })
+      const { isBusiness } = req.params
+      const { admin } = req.body
 
-      if (req.body.admin == process.env.ADMIN_PASSWORD) {
+      let accounts = await Auth.find({ isBusiness })
+
+      if (admin == process.env.ADMIN_PASSWORD) {
         accounts = accounts.filter((account: typeof IAuth) => !account.isVerified)
-        return res.status(200).json(accounts)
-      } else if (req.body.admin) return res.status(401).json('Unauthorized')
+      } else if (admin) return res.status(401).json({ message: 'Invalid admin password' })
+      else accounts = accounts.filter((account: typeof IAuth) => account.isVerified)
 
-      // Filter only verified accounts
-      accounts = accounts
-        .filter((account: typeof IAuth) => account.isVerified)
-        .map((account: typeof IAuth) => {
-          return {
-            _id: account._id,
-            email: account.email,
-            isBusiness: account.isBusiness,
-            isVerified: account.isVerified,
-            cert: account.cert
-          }
-        })
+      accounts = accounts.map(({ _id, name, email, isBusiness, isVerified, cert }: typeof IAuth) => ({
+        _id,
+        name,
+        email,
+        isBusiness,
+        isVerified,
+        cert
+      }))
 
-      res.status(200).json(accounts)
+      return res.status(200).json({ message: 'Accounts retrieved successfully', data: accounts })
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(500).json({ message: 'Failed to retrieve accounts', error: error.message })
     }
   },
-  // Verify account
+
   verifyAccount: async (req: typeof Request, res: typeof Response) => {
     try {
       // 1 is verified, 0 is deleted
-      console.log(req.body.id, req.body.password)
-      const account = await Auth.findOne({ _id: req.body.id, password: req.body.password, isVerified: 0 })
-      if (!account) return res.status(400).json('Account not found')
-      else if (!req.body.isVerified) await account.delete()
-      else {
+      const { id, isVerified } = req.body
+      const account = await Auth.findOne({ _id: id, isVerified: false })
+
+      if (!account) return res.status(404).json({ message: 'Account not found or already verified' })
+
+      if (isVerified) {
         account.isVerified = true
         await account.save()
         await refreshTokens(account)
+        return res.status(200).json({ message: 'Account verified successfully' })
+      } else {
+        await account.delete()
+        return res.status(200).json({ message: 'Account deleted successfully' })
       }
-
-      res.status(200).json('OK')
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(500).json({ message: 'Failed to verify account', error: error.message })
     }
   },
-  // Get deleted accounts
-  getDeleted: async (req: typeof Request, res: typeof Response) => {
-    try {
-      const accounts = await Auth.findDeleted()
 
-      res.status(200).json(accounts)
-    } catch (error) {
-      res.status(400).json({ message: error.message })
-    }
-  },
-  // Logout
   logout: async (req: typeof Request, res: typeof Response) => {
     try {
       const account = await Auth.findByIdAndUpdate(req.userId, { refreshToken: null })
+      if (!account) return res.status(400).json({ message: 'Account not found' })
 
-      if (!account) return res.status(400).json('Account not found')
-
-      res.sendStatus(204)
+      return res.status(200).json({ message: 'Logged out successfully' })
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(500).json({ message: 'Failed to logout', error: error.message })
     }
   },
-  // Refresh token
+
   refreshToken: async (req: typeof Request, res: typeof Response) => {
     try {
-      const refreshToken = req.body.refreshToken
-      if (!refreshToken) return res.status(401).json('User not authenticated')
+      const { refreshToken } = req.body
+      if (!refreshToken) return res.status(401).json({ message: 'Refresh token required' })
 
       const account = await Auth.findOne({ refreshToken })
-      if (!account) return res.status(403).json('Invalid token')
-
+      if (!account) return res.status(403).json({ message: 'Invalid refresh token' })
       const tokens = await refreshTokens(account)
 
-      res.status(200).json(tokens)
+      return res.status(200).json({ message: 'Token refreshed successfully', data: tokens })
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(500).json({ message: 'Failed to refresh token', error: error.message })
     }
   }
 }

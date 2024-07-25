@@ -1,74 +1,69 @@
-const IPromotion = require('../models/Promotion')
 const { Request, Response } = require('express')
 const { Promotion } = require('../models')
 
 const promotionController = {
-  // Create promotion
   createPromotion: async (req: typeof Request, res: typeof Response) => {
     try {
-      const newPromotion = new Promotion(req.body)
-      newPromotion.business = req.userId
-      newPromotion.startDate = newPromotion.startDate.setHours(0, 0, 0, 0)
-      newPromotion.endDate = newPromotion.endDate.setHours(23, 59, 59, 999)
+      let { startDate, endDate } = req.body
+      startDate = new Date(startDate || Date.now()).setHours(0, 0, 0, 0)
+      endDate = new Date(endDate || Date.now()).setHours(23, 59, 59, 999)
+
+      const newPromotion = new Promotion({
+        ...req.body,
+        business: req.userId,
+        startDate,
+        endDate
+      })
       await newPromotion.save()
 
-      res.status(201).json('OK')
+      return res.status(201).json({ message: 'Promotion created successfully', data: newPromotion })
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(400).json({ message: 'Failed to create promotion', error: error.message })
     }
   },
-  // Update promotion
+
   updatePromotion: async (req: typeof Request, res: typeof Response) => {
     try {
       const { id, ...updateData } = req.body
-      const promotion = await Promotion.findOne({ _id: id, business: req.userId })
-      if (!promotion) res.status(404).json('Promotion not found')
-      await promotion.updateOne(updateData)
+      const promotion = await Promotion.findOneAndUpdate({ _id: id, business: req.userId }, updateData, {
+        new: true,
+        runValidators: true
+      })
 
-      res.status(200).json('OK')
+      if (!promotion) return res.status(404).json({ message: 'Promotion not found' })
+
+      return res.status(200).json({ message: 'Promotion updated successfully', data: promotion })
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(400).json({ message: 'Failed to update promotion', error: error.message })
     }
   },
-  // Delete promotion
+
   deletePromotion: async (req: typeof Request, res: typeof Response) => {
     try {
-      const promotion = await Promotion.findOne({ _id: req.params.id, business: req.userId })
-      if (!promotion) res.status(404).json('Promotion not found')
-      await promotion.delete()
+      const promotion = await Promotion.findOneAndDelete({ _id: req.params.id, business: req.userId })
+      if (!promotion) return res.status(404).json({ message: 'Promotion not found' })
 
-      res.sendStatus(204)
+      return res.status(200).json({ message: 'Promotion deleted successfully' })
     } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(400).json({ message: 'Failed to delete promotion', error: error.message })
     }
   },
-  // Get all promotions
+
   getAllPromotions: async (req: typeof Request, res: typeof Response) => {
     try {
-      if (req.params.id) {
-        const promotions = await Promotion.find({ business: req.params.id })
-        return res.status(200).json(promotions)
+      let promotions
+      if (req.params.id) promotions = await Promotion.find({ business: req.params.id })
+      else {
+        const now = new Date()
+        promotions = await Promotion.find({
+          startDate: { $lte: now },
+          endDate: { $gte: now }
+        }).populate('business', 'name')
       }
 
-      // Get all promotions for happenings
-      let promotions = await Promotion.find().populate('business', 'name')
-      promotions = promotions.filter(
-        (promotion: typeof IPromotion) => promotion.startDate <= Date.now() && promotion.endDate >= Date.now()
-      )
-
-      res.status(200).json(promotions)
+      return res.status(200).json({ message: 'Promotions retrieved successfully', data: promotions })
     } catch (error) {
-      res.status(400).json({ message: error.message })
-    }
-  },
-  // Get deleted promotions
-  getDeleted: async (req: typeof Request, res: typeof Response) => {
-    try {
-      const promotions = await Promotion.findDeleted()
-
-      res.status(200).json(promotions)
-    } catch (error) {
-      res.status(400).json({ message: error.message })
+      return res.status(400).json({ message: 'Failed to retrieve promotions', error: error.message })
     }
   }
 }
