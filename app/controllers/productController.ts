@@ -5,6 +5,18 @@ const contractInstance = require('../../plugins/bc')
 const verifyToken = require('../../middleware/auth')
 const { Resource, Auth } = require('../models')
 
+// Constants for status types
+const STATUS_HISTORY = 0
+const STATUS_HARVEST = 1
+const STATUS_EXPORT = 2
+const STATUS_DELETE = 3
+
+// Constants for product types
+const TYPE_PLANTING = 'planting'
+// const TYPE_HARVESTED = 'harvested'
+const TYPE_INSPECTED = 'inspected'
+const TYPE_EXPORTED = 'exported'
+
 const productController = {
   async getProducts(req: typeof Request, res: typeof Response) {
     try {
@@ -41,7 +53,7 @@ const productController = {
       const productId = req.params.id
       const product = await getDetail(productId)
 
-      if (product.type != 'exported')
+      if (product.type != TYPE_EXPORTED)
         return res.status(400).json({ message: 'This product is not traceable for trading' })
 
       return res.status(200).json({ message: 'Product retrieved successfully', data: product })
@@ -66,10 +78,10 @@ const productController = {
         name,
         variety,
         location,
-        business.name,
         req.userId,
-        inspector.name,
+        business.name,
         inspectorId,
+        inspector.name,
         desc
       )
       const receipt = await tx.wait()
@@ -114,44 +126,43 @@ const productController = {
 
   async handleStatus(req: typeof Request, res: typeof Response) {
     try {
-      //! Product: 0: planting, 1: harvested, 2: inspected, 3: exported
-      //! Action: 0: history, 1: harvest, 2: export, 3: delete
+      const { productId, businessId, isFarmer, phone, type: statusType, desc, img } = req.body
 
-      const { productId, businessId, isFarmer, phone, type: typeAction, desc, img } = req.body
-
-      // Check action type
-      if ((isFarmer && typeAction === 2) || (!isFarmer && typeAction !== 2))
+      // Check action - role
+      if ((isFarmer && statusType === STATUS_EXPORT) || (!isFarmer && statusType !== STATUS_EXPORT))
         return res.status(400).json({ message: 'Invalid operation for user type' })
 
+      // Check employee - company
+      const resource = await Resource.findOne({ business: businessId })
+      const isEmployee = isFarmer ? resource.farmers.includes(phone) : resource.processors.includes(phone)
+      if (!isEmployee) return res.status(403).json({ message: 'Access denied: Not an employee' })
+
+      // Check employee - product
+      const product = await getDetail(productId)
+      if (product.business.id !== businessId)
+        return res.status(403).json({ message: 'Access denied: Product does not belong to your company' })
+
       // Check status type
-      const productType = await contractInstance.getType(productId)
+      const productType = product.type
       if (
-        (typeAction === 0 && productType != 0) ||
-        (typeAction === 1 && productType != 0) ||
-        (typeAction === 2 && productType != 2) ||
-        (typeAction === 3 && productType != 0)
+        (statusType === STATUS_HISTORY && productType != TYPE_PLANTING) ||
+        (statusType === STATUS_HARVEST && productType != TYPE_PLANTING) ||
+        (statusType === STATUS_EXPORT && productType != TYPE_INSPECTED) ||
+        (statusType === STATUS_DELETE && productType != TYPE_PLANTING)
       )
         return res.status(400).json({ message: 'This operation is not allowed for the current status' })
 
-      // Check employee access
-      const resource = await Resource.findOne({ business: businessId })
-      const isEmployee = isFarmer ? resource.farmers.includes(phone) : resource.processors.includes(phone)
-
-      if (!isEmployee) return res.status(403).json({ message: 'Access denied: Not an employee' })
-
-      // Check product ownership
-      const product = await getDetail(productId)
-      if (product.business.id !== businessId) {
-        return res.status(403).json({ message: 'Access denied: Product does not belong to your company' })
-      }
+      // Check delete - history
+      if (statusType === STATUS_DELETE && product.historyCount == 0)
+        return res.status(400).json({ message: 'This product has no history to delete' })
 
       // Update status
       const statusData = {
-        desc: typeAction === 3 ? '' : desc,
-        img: typeAction === 3 ? [] : img
+        desc: statusType === STATUS_DELETE ? '' : desc,
+        img: statusType === STATUS_DELETE ? [] : img
       }
 
-      const tx = await contractInstance.handleStatus(productId, statusData.desc, statusData.img, typeAction)
+      const tx = await contractInstance.handleStatus(productId, statusData.desc, statusData.img, statusType)
       await tx.wait()
 
       return res.status(200).json({ message: 'Status updated successfully' })

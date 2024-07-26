@@ -2,13 +2,13 @@ export interface IBigNumber {
   _hex: string
 }
 
-interface I_Status {
+export interface IStatus {
   0: IBigNumber
   1: string
   2: string[]
 }
 
-interface I_Account {
+interface IAccount {
   0: string
   1: string
 }
@@ -21,7 +21,7 @@ export function toDate(timestamp: IBigNumber) {
   return new Date(toNumber(timestamp) * 1000)
 }
 
-export function toStatus(_status: I_Status) {
+export function toStatus(_status: IStatus) {
   return {
     time: toDate(_status[0]),
     desc: _status[1],
@@ -29,7 +29,7 @@ export function toStatus(_status: I_Status) {
   }
 }
 
-export function toAccount(_account: I_Account) {
+export function toAccount(_account: IAccount) {
   return {
     id: _account[0],
     name: _account[1]
