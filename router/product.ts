@@ -3,45 +3,20 @@ const productController = require('../app/controllers/productController')
 const { isBusiness } = require('../middleware/role')
 const verifyToken = require('../middleware/auth')
 
-/**
- * @desc    Get all products
- * @access  Private (business, inspector, employee)
- * @header  Authorization - Optional. If provided, verifies token
- * @body    { businessId?: string, isFarmer?: boolean, phone?: string }
- * @returns Array of product details
- */
-router.get('/', productController.getProducts)
-
-/**
- * @desc    Get product by id
- * @access  Public (intended for consumers)
- * @param   id - Product ID
- * @returns Product detail object
- */
-router.get('/:id', productController.getProductById)
-
-/**
- * @desc    Create a new product
- * @access  Private (business only)
- * @body    { name: string, variety: string, location: string, inspectorId: string, desc: string }
- * @returns Created product ID
- */
+// body { name, variety, land, inspector, quanity }
 router.post('/', isBusiness, productController.createProduct)
 
-/**
- * @desc    Update product details
- * @access  Private (business, inspector)
- * @body    { id: string, name?: string, variety?: string, location?: string, desc?: string, imgCert?: string }
- * @returns Success message
- */
-router.put('/', verifyToken, productController.updateProduct)
+// body { EXCEPT: record, export_at, land, variety }
+router.put('/:id', verifyToken, productController.updateProduct)
 
-/**
- * @desc    Handle product status changes
- * @access  Private (employees)
- * @body    { productId: string, businessId: string, isFarmer: boolean, phone: string, type: number, desc?: string, img?: string[] }
- * @returns Success message
- */
-router.put('/status', productController.handleStatus)
+router.delete('/:id', isBusiness, productController.deleteProduct)
+
+// body { code, businessId } -> If business/inspector, work with header token
+router.get('/', verifyToken, productController.getAllProducts)
+
+router.get('/:id', productController.getProductDetails)
+
+// body { productId, img, desc, isHarvested }
+router.put('/:isDelete', productController.handleStatus)
 
 module.exports = router

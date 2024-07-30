@@ -95,27 +95,19 @@ contract HistoryApi {
   /**
    * @dev Retrieves all statuses of a history record
    * @param recordId The ID of the record to query
-   * @return An array of Status structs
+   * @return _statuses An array of Status structs
+   * @return isHarvested Whether the product is harvested
+   * @return statusCount The number of statuses in the record
    */
-  function getStatus(uint256 recordId) public view returns (Status[] memory) {
+  function getRecord(
+    uint256 recordId
+  ) public view returns (Status[] memory _statuses, bool isHarvested, uint256 statusCount) {
     require(recordId < records.length, 'Record does not exist');
     Record storage record = records[recordId];
 
     Status[] memory statuses = new Status[](record.statusCount);
     for (uint256 i = 0; i < record.statusCount; i++) statuses[i] = record.statuses[i];
 
-    return statuses;
-  }
-
-  /**
-   * @dev Retrieves the info of a history record
-   * @param recordId The ID of the record to query
-   * @return isHarvested Whether the product is harvested
-   * @return statusCount The number of statuses in the record
-   */
-  function getInfo(uint256 recordId) public view returns (bool isHarvested, uint256 statusCount) {
-    require(recordId < records.length, 'Record does not exist');
-    Record storage record = records[recordId];
-    return (record.isHarvested, record.statusCount);
+    return (statuses, record.isHarvested, record.statusCount);
   }
 }

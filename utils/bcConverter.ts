@@ -8,11 +8,6 @@ export interface IStatus {
   2: string[]
 }
 
-interface IAccount {
-  0: string
-  1: string
-}
-
 export function toNumber(num: IBigNumber) {
   return parseInt(num._hex)
 }
@@ -29,9 +24,7 @@ export function toStatus(_status: IStatus) {
   }
 }
 
-export function toAccount(_account: IAccount) {
-  return {
-    id: _account[0],
-    name: _account[1]
-  }
+export function toRecord(_record: { 0: IStatus[]; 1: boolean; 2: IBigNumber }) {
+  const status = _record[0].map((s) => toStatus(s))
+  return status
 }

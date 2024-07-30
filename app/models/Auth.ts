@@ -3,10 +3,10 @@ const mongoose = require('mongoose')
 export interface IAuth {
   _id: string
   name: string
+  code: string | undefined
   email: string
   password: string | undefined
   isBusiness: boolean
-  isVerified: boolean
   cert: string
   refreshToken: string | null
 }
@@ -16,6 +16,10 @@ const authSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true
+    },
+    code: {
+      type: String,
+      unique: true
     },
     email: {
       type: String,
@@ -31,11 +35,6 @@ const authSchema = new mongoose.Schema(
     isBusiness: {
       type: Boolean,
       required: true
-    },
-    isVerified: {
-      type: Boolean,
-      required: true,
-      default: false
     },
     cert: {
       type: String,

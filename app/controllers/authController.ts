@@ -1,7 +1,7 @@
 const { refreshTokens } = require('../../utils/refreshTokens')
 const { Request, Response } = require('express')
-const { IAuth } = require('./../models/Auth')
-const { Auth } = require('../models')
+const { Auth, Batch } = require('../models')
+const { IAuth } = require('../models/Auth')
 require('dotenv').config()
 
 const authController = {
@@ -22,7 +22,7 @@ const authController = {
       const auth = await Auth.findOne({ email, password, isBusiness })
 
       if (!auth) return res.status(400).json({ message: 'Invalid credentials' })
-      if (!auth.isVerified) return res.status(401).json({ message: 'Account not verified' })
+      if (!auth.code) return res.status(401).json({ message: 'Account not verified' })
 
       const tokens = await refreshTokens(auth)
 
@@ -35,24 +35,22 @@ const authController = {
     }
   },
 
-  getAccounts: async (req: typeof Request, res: typeof Response) => {
+  getAllAccounts: async (req: typeof Request, res: typeof Response) => {
     try {
       const { isBusiness } = req.params
       const { admin } = req.body
 
-      let accounts = await Auth.find({ isBusiness })
+      let accounts = (await Auth.find({ isBusiness })) as (typeof IAuth)[]
 
-      if (admin == process.env.ADMIN_PASSWORD) {
-        accounts = accounts.filter((account: typeof IAuth) => !account.isVerified)
-      } else if (admin) return res.status(401).json({ message: 'Invalid admin password' })
-      else accounts = accounts.filter((account: typeof IAuth) => account.isVerified)
+      if (admin == process.env.ADMIN_PASSWORD) accounts = accounts.filter((account) => !account.code)
+      else if (admin) return res.status(401).json({ message: 'Invalid admin password' })
+      else accounts = accounts.filter((account) => account.code)
 
-      accounts = accounts.map(({ _id, name, email, isBusiness, isVerified, cert }: typeof IAuth) => ({
+      accounts = accounts.map(({ _id, name, email, isBusiness, cert }) => ({
         _id,
         name,
         email,
         isBusiness,
-        isVerified,
         cert
       }))
 
@@ -64,16 +62,20 @@ const authController = {
 
   verifyAccount: async (req: typeof Request, res: typeof Response) => {
     try {
-      // 1 is verified, 0 is deleted
-      const { id, isVerified } = req.body
-      const account = await Auth.findOne({ _id: id, isVerified: false })
+      const { accountId, code } = req.body
+      const account = await Auth.findOne({ _id: accountId, code: null })
 
       if (!account) return res.status(404).json({ message: 'Account not found or already verified' })
 
-      if (isVerified) {
-        account.isVerified = true
+      if (code) {
+        account.code = code
         await account.save()
         await refreshTokens(account)
+
+        // create batch
+        const newBatch = new Batch({ business: accountId })
+        await newBatch.save()
+
         return res.status(200).json({ message: 'Account verified successfully' })
       } else {
         await account.delete()
@@ -107,6 +109,20 @@ const authController = {
       return res.status(200).json({ message: 'Token refreshed successfully', data: tokens })
     } catch (error) {
       return res.status(500).json({ message: 'Failed to refresh token', error: error.message })
+    }
+  },
+
+  getDetails: async (req: typeof Request, res: typeof Response) => {
+    try {
+      const account = await Auth.findById(req.userId)
+      if (!account) return res.status(404).json({ message: 'Account not found' })
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+      const { password, refreshToken, ...data } = account.toObject()
+
+      return res.status(200).json({ message: 'Account details retrieved successfully', data })
+    } catch (error) {
+      return res.status(500).json({ message: 'Failed to retrieve account details', error: error.message })
     }
   }
 }

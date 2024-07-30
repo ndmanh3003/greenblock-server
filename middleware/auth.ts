@@ -13,7 +13,7 @@ const verifyToken = async (req: typeof Request, res: typeof Response, next?: typ
     req.userId = decoded._id
 
     const account = await Auth.findById(req.userId)
-    if (!account.isVerified) return handleErrors(new Error('Account not verified'), res, next)
+    if (!account.code) return handleErrors(new Error('Account not verified'), res, next)
     if (!account.refreshToken) return handleErrors(new Error('Refresh token not found'), res, next)
 
     req.isBusiness = account.isBusiness
