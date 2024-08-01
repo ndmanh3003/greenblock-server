@@ -1,11 +1,14 @@
-const router = require('express').Router()
-const batchController = require('../app/controllers/batchController')
-const { isBusiness } = require('../middleware/role')
+import { Router } from 'express'
+const router = Router()
 
-// body {type: land/variety}
+import { batchController } from '../app/controllers'
+import { isBusiness } from '../middleware'
+
 router.get('/:type', isBusiness, batchController.getAllItems)
 
-// body {type: land/variety, item: [{name, ?quanity}]}
+// body {items: [{name, ?itemId, ?quantity}]}
 router.put('/:type', isBusiness, batchController.updateAllItemNames)
 
-module.exports = router
+router.put('/code/:code', isBusiness, batchController.updateBatchCode)
+
+export default router

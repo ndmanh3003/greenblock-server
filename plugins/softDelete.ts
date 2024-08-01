@@ -1,8 +1,6 @@
-const mongooseDelete = require('mongoose-delete')
-const mongoose = require('mongoose')
+import mongooseDelete from 'mongoose-delete'
+import { Schema } from 'mongoose'
 
-function softDelete(schema: typeof mongoose.Schema) {
+export const softDelete = async (schema: Schema) => {
   schema.plugin(mongooseDelete, { deletedAt: true, overrideMethods: 'all' })
 }
-
-module.exports = softDelete

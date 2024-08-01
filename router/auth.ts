@@ -1,6 +1,8 @@
-const router = require('express').Router()
-const authController = require('../app/controllers/authController')
-const verifyToken = require('../middleware/auth')
+import { Router } from 'express'
+const router = Router()
+
+import { authController } from '../app/controllers'
+import { verifyToken } from '../middleware'
 
 // body {name, email, password, isBusiness, cert}
 router.post('/register', authController.register)
@@ -8,10 +10,10 @@ router.post('/register', authController.register)
 // body {email, password, isBusiness}
 router.post('/login', authController.login)
 
-// body {admin}: if admin -> get all accounts, else -> get verified accounts
+// body {admin_pass}: if admin -> get all accounts, else -> get verified accounts
 router.get('/:isBusiness', authController.getAllAccounts)
 
-// body {accountId, code}
+// body {accountId, isVerified}
 router.put('/', authController.verifyAccount)
 
 router.delete('/logout', verifyToken, authController.logout)
@@ -21,4 +23,4 @@ router.post('/refresh', authController.refreshToken)
 
 router.get('/', verifyToken, authController.getDetails)
 
-module.exports = router
+export default router

@@ -1,21 +1,22 @@
-const router = require('./router')
-
-const express = require('express')
+import express from 'express'
 const app = express()
 
-const bodyParser = require('body-parser')
+import bodyParser from 'body-parser'
 app.use(bodyParser.json({ limit: '50mb' }))
-const cors = require('cors')
+import cors from 'cors'
 app.use(cors())
-const morgan = require('morgan')
+import morgan from 'morgan'
 app.use(morgan('dev'))
-require('dotenv').config()
+
+import dotenv from 'dotenv'
+dotenv.config()
 
 //TODO: Connect to MongoDB
-const db = require('./plugins/db')
+import { db } from './plugins/db'
 db()
 
 //TODO: Routes
+import router from './router'
 router(app)
 
 app.listen(8080, () => {

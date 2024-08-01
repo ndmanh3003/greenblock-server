@@ -1,50 +1,54 @@
-const mongoose = require('mongoose')
+import { Schema, Document } from 'mongoose'
 
-export interface IAuth {
-  _id: string
+export interface IAuth extends Document {
   name: string
-  code: string | undefined
+  isVerified?: boolean
   email: string
-  password: string | undefined
+  password?: string
   isBusiness: boolean
   cert: string
-  refreshToken: string | null
+  refreshToken?: string
 }
 
-const authSchema = new mongoose.Schema(
+export const authSchema = new Schema<IAuth>(
   {
     name: {
       type: String,
-      required: true
-    },
-    code: {
-      type: String,
-      unique: true
+      required: true,
+      minlength: 3,
+      maxlength: 30
     },
     email: {
       type: String,
       required: true,
       unique: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address']
+      match: [/^\S+@\S+\.\S+$/, 'Email is invalid']
     },
     password: {
       type: String,
       required: true,
-      minlength: 6
-    },
-    isBusiness: {
-      type: Boolean,
-      required: true
+      minlength: 6,
+      maxlength: 30
     },
     cert: {
       type: String,
       required: true
     },
-    refreshToken: String
+    isBusiness: {
+      type: Boolean,
+      required: true
+    },
+    // manage by system
+    isVerified: {
+      type: Boolean,
+      default: false
+    },
+    refreshToken: {
+      type: String,
+      default: null
+    }
   },
   {
     timestamps: true
   }
 )
-
-module.exports = authSchema

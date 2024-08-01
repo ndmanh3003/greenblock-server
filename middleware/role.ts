@@ -1,7 +1,7 @@
-const { Request, Response, NextFunction } = require('express')
-const verifyToken = require('./auth')
+import { Request, Response, NextFunction } from 'express'
+import { verifyToken } from '.'
 
-const isBusiness = async (req: typeof Request, res: typeof Response, next: typeof NextFunction) => {
+export const isBusiness = async (req: Request, res: Response, next: NextFunction) => {
   try {
     await verifyToken(req, res)
     if (!req.isBusiness) return res.status(401).json({ message: 'Permission denied' })
@@ -11,7 +11,7 @@ const isBusiness = async (req: typeof Request, res: typeof Response, next: typeo
   }
 }
 
-const isInspector = async (req: typeof Request, res: typeof Response, next: typeof NextFunction) => {
+export const isInspector = async (req: Request, res: Response, next: NextFunction) => {
   try {
     await verifyToken(req, res)
     if (req.isBusiness) return res.status(401).json({ message: 'Permission denied' })
@@ -20,5 +20,3 @@ const isInspector = async (req: typeof Request, res: typeof Response, next: type
     return res.status(400).json({ message: error.message })
   }
 }
-
-module.exports = { isBusiness, isInspector }

@@ -1,15 +1,10 @@
-const { IAuth } = require('../app/models/Auth')
-require('dotenv').config()
-const jwt = require('jsonwebtoken')
+import jwt from 'jsonwebtoken'
+import { IAuth } from '../app/models'
 
-interface ITokenAuth {
-  save: () => Promise<void>
-}
+export async function refreshTokens(account: IAuth) {
+  const { _id, email, isVerified } = account
 
-export async function refreshTokens(account: typeof IAuth & ITokenAuth) {
-  const { _id, email, code } = account
-
-  if (!code) throw new Error('Account not verified')
+  if (!isVerified) throw new Error('Account not verified')
 
   const accessToken = jwt.sign({ _id, email }, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: '10h'

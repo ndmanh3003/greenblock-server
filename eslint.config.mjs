@@ -10,8 +10,8 @@ export default [
     languageOptions: {
       globals: {
         ...globals.browser,
-        ...globals.node,
-        ...globals.es6
+        ...globals.es6,
+        ...globals.node
       }
     }
   },
@@ -20,7 +20,6 @@ export default [
   eslintConfigPrettier,
   {
     rules: {
-      '@typescript-eslint/no-var-requires': 'off',
       'no-unused-vars': 'error',
       'no-undef': 'error',
       quotes: ['error', 'single'],

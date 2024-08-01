@@ -1,76 +1,78 @@
-const { Request, Response } = require('express')
-import { ILand, IVariety } from './../models/Batch'
-const { Batch } = require('../models')
+import { Request, Response } from 'express'
+import { IBatch, ILand, IVariety, Batch } from './../models'
 
-const findBatch = async (userId: string) => {
-  const batch = await Batch.findOne({ business: userId })
+const findBatch = async (userId: string): Promise<IBatch> => {
+  let batch = await Batch.findOne({ business: userId })
 
   if (!batch) {
-    const newBatch = new Batch({ business: userId })
-    await newBatch.save()
-    return newBatch
+    batch = new Batch({ business: userId })
+    await batch.save()
   }
 
   return batch
 }
 
-const checkValidType = (type: string) => {
-  if (type !== 'land' && type !== 'variety') throw new Error('Invalid item type')
+const isValidType = (type: string): type is 'land' | 'variety' => {
+  return type === 'land' || type === 'variety'
 }
 
-const batchController = {
-  getAllItems: async (req: typeof Request, res: typeof Response) => {
+export const batchController = {
+  getAllItems: async (req: Request, res: Response) => {
     try {
       const { type } = req.params
-      checkValidType(type)
+      if (!isValidType(type)) throw new Error('Invalid item type')
 
       const batch = await findBatch(req.userId)
-      const items = batch[type].filter((item: ILand | IVariety) => !item.isDeleted)
+      const items = batch[type].filter((item) => !item.isDeleted)
 
       let additionalData = {}
       if (type === 'land') {
-        const emptyCount = items.filter((land: ILand) => !land.isPlanting).length
-        const plantingCount = items.filter((land: ILand) => land.isPlanting).length
-        additionalData = { emptyCount, plantingCount }
+        const empty = items.filter((land: ILand) => land.product.length === 0).length
+        const planting = items.length - empty
+        additionalData = { empty, planting }
+      } else {
+        const empty = items.filter((variety: IVariety) => variety.quantity === 0).length
+        const available = items.length - empty
+        additionalData = { empty, available }
       }
 
       return res.status(200).json({
         message: 'Items retrieved successfully',
-        data: { item: items, ...additionalData }
+        data: { items: items, ...additionalData, code: batch.code }
       })
     } catch (error) {
       return res.status(500).json({ message: 'Failed to retrieve items', error: error.message })
     }
   },
 
-  updateAllItemNames: async (req: typeof Request, res: typeof Response) => {
+  updateAllItemNames: async (req: Request, res: Response) => {
     try {
       const { type } = req.params
-      checkValidType(type)
+      if (!isValidType(type)) throw new Error('Invalid item type')
 
-      const items: { name: string; quanity?: number }[] = req.body.item
+      const items: { name: string; quantity?: number; itemId?: string }[] = req.body.items
+
       const batch = await findBatch(req.userId)
-
-      // Delete items no exist
-      batch[type].forEach((item: ILand | IVariety) => {
-        if (!items.some((i) => i.name == item.name)) item.isDeleted = true
-      })
+      batch[type].forEach((item) => (item.isDeleted = true))
 
       items.forEach((item) => {
-        if (batch[type].some((i: ILand | IVariety) => i.name == item.name)) {
-          // Update item name
-          const index = batch[type].findIndex((i: ILand | IVariety) => i.name == item.name)
+        const existingItem = batch[type].find((i) => i._id == item.itemId)
 
-          batch[type][index].isDeleted = false
-          batch[type][index].name = item.name
-          type === 'variety' && (batch[type][index].quanity = Math.max(item.quanity, 0))
+        if (existingItem) {
+          // update existing item
+          existingItem.name = item.name || existingItem.name
+          existingItem.isDeleted = false
+          if (type === 'variety') {
+            const varietyItem = existingItem as IVariety
+            varietyItem.quantity = Math.max(item.quantity || 0, 0) || varietyItem.quantity
+          }
         } else {
-          // Add new item
+          // add new item
           batch[type].push({
             name: item.name,
             isDeleted: false,
-            ...(type === 'land' ? { isPlanting: false } : { quanity: Math.max(item.quanity, 0) })
-          })
+            ...(type === 'land' ? { isPlanting: false } : { quantity: Math.max(item.quantity || 0, 0) })
+          } as ILand & IVariety)
         }
       })
 
@@ -80,7 +82,19 @@ const batchController = {
     } catch (error) {
       return res.status(500).json({ message: 'Failed to update item names', error: error.message })
     }
+  },
+
+  updateBatchCode: async (req: Request, res: Response) => {
+    try {
+      const { code } = req.params
+
+      const batch = await findBatch(req.userId)
+      batch.code = code
+      await batch.save()
+
+      return res.status(200).json({ message: 'Batch code updated successfully' })
+    } catch (error) {
+      return res.status(500).json({ message: 'Failed to update batch code', error: error.message })
+    }
   }
 }
-
-module.exports = batchController

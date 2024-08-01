@@ -1,79 +1,83 @@
-const mongoose = require('mongoose')
+import { Types, Schema, Document } from 'mongoose'
 
-export interface ILand {
-  _id: string
+export interface ILand extends Document {
   name: string
-  isPlanting: boolean
+  product: Types.ObjectId[]
   isDeleted: boolean
 }
 
-export interface IVariety {
-  _id: string
+export interface IVariety extends Document {
   name: string
-  quanity: number
+  quantity: number
+  product: Types.ObjectId[]
   isDeleted: boolean
 }
 
-export interface IBatch {
-  _id: string
+export interface IBatch extends Document {
   land: ILand[]
   variety: IVariety[]
-  business: string
+  business: Types.ObjectId
+  code: string
 }
 
-const landSchema = new mongoose.Schema({
+const landSchema = new Schema<ILand>({
   name: {
     type: String,
     required: true,
-    min: 3,
-    max: 30
+    minlength: 3,
+    maxlength: 30
   },
-  isPlanting: {
-    type: Boolean,
-    required: true,
-    default: false
+  product: {
+    type: [Schema.Types.ObjectId],
+    default: [],
+    ref: 'Product'
   },
   isDeleted: {
     type: Boolean,
     default: false
-  }
-})
-const varietySchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    minLength: 3,
-    maxLength: 30
-  },
-  isDeleted: {
-    type: Boolean,
-    default: false
-  },
-  quanity: {
-    type: Number,
-    required: true,
-    default: 0,
-    min: 0
   }
 })
 
-const batchSchema = new mongoose.Schema({
+const varietySchema = new Schema<IVariety>({
+  name: {
+    type: String,
+    required: true,
+    minlength: 3,
+    maxlength: 30
+  },
+  quantity: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  product: {
+    type: [Schema.Types.ObjectId],
+    default: [],
+    ref: 'Product'
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  }
+})
+
+export const batchSchema = new Schema<IBatch>({
   land: {
     type: [landSchema],
-    required: true,
     default: []
   },
   variety: {
     type: [varietySchema],
-    required: true,
     default: []
   },
   business: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Business',
     required: true,
     unique: true
+  },
+  code: {
+    type: String,
+    default: '123'
   }
 })
-
-module.exports = batchSchema

@@ -5,7 +5,10 @@
     "baseUrl": "src",
     "outDir": "dist",
     "sourceMap": true,
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
-  "include": ["**/*"]
+  "include": ["**/*"],
+  "files": ["types.d.ts"]
 }

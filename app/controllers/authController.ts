@@ -1,13 +1,12 @@
-const { refreshTokens } = require('../../utils/refreshTokens')
-const { Request, Response } = require('express')
-const { Auth, Batch } = require('../models')
-const { IAuth } = require('../models/Auth')
-require('dotenv').config()
+import { Request, Response } from 'express'
+import { refreshTokens } from '../../utils/refreshTokens'
+import { Batch, Auth } from '../models'
 
-const authController = {
-  register: async (req: typeof Request, res: typeof Response) => {
+export const authController = {
+  register: async (req: Request, res: Response) => {
     try {
-      const newAuth = new Auth(req.body)
+      const { name, email, password, isBusiness, cert } = req.body
+      const newAuth = new Auth({ name, email, password, isBusiness, cert })
       await newAuth.save()
 
       return res.status(201).json({ message: 'Registration successful' })
@@ -16,43 +15,41 @@ const authController = {
     }
   },
 
-  login: async (req: typeof Request, res: typeof Response) => {
+  login: async (req: Request, res: Response) => {
     try {
       const { email, password, isBusiness } = req.body
       const auth = await Auth.findOne({ email, password, isBusiness })
 
       if (!auth) return res.status(400).json({ message: 'Invalid credentials' })
-      if (!auth.code) return res.status(401).json({ message: 'Account not verified' })
+      if (!auth.isVerified) return res.status(401).json({ message: 'Account not verified' })
 
       const tokens = await refreshTokens(auth)
 
       return res.status(200).json({
         message: 'Login successful',
-        data: { name: auth.name, isBusiness: auth.isBusiness, ...tokens }
+        data: { name: auth.name, ...tokens }
       })
     } catch (error) {
       return res.status(500).json({ message: 'Login failed', error: error.message })
     }
   },
 
-  getAllAccounts: async (req: typeof Request, res: typeof Response) => {
+  getAllAccounts: async (req: Request, res: Response) => {
     try {
       const { isBusiness } = req.params
-      const { admin } = req.body
+      const { admin_pass } = req.body
 
-      let accounts = (await Auth.find({ isBusiness })) as (typeof IAuth)[]
+      let query = {}
 
-      if (admin == process.env.ADMIN_PASSWORD) accounts = accounts.filter((account) => !account.code)
-      else if (admin) return res.status(401).json({ message: 'Invalid admin password' })
-      else accounts = accounts.filter((account) => account.code)
+      if (admin_pass === process.env.ADMIN_PASSWORD) query = { isVerified: false }
+      else if (admin_pass) return res.status(401).json({ message: 'Invalid admin password' })
+      else query = { isVerified: true }
 
-      accounts = accounts.map(({ _id, name, email, isBusiness, cert }) => ({
-        _id,
-        name,
-        email,
-        isBusiness,
-        cert
-      }))
+      const accounts = (await Auth.find({ ...query, isBusiness })).map((account) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+        const { password, refreshToken, ...data } = account.toObject()
+        return data
+      })
 
       return res.status(200).json({ message: 'Accounts retrieved successfully', data: accounts })
     } catch (error) {
@@ -60,25 +57,24 @@ const authController = {
     }
   },
 
-  verifyAccount: async (req: typeof Request, res: typeof Response) => {
+  verifyAccount: async (req: Request, res: Response) => {
     try {
-      const { accountId, code } = req.body
-      const account = await Auth.findOne({ _id: accountId, code: null })
+      const { accountId, isVerified } = req.body
 
-      if (!account) return res.status(404).json({ message: 'Account not found or already verified' })
+      if (isVerified) {
+        const account = await Auth.findOneAndUpdate({ _id: accountId, code: null }, { isVerified }, { new: true })
+        if (!account) return res.status(404).json({ message: 'Account not found or already verified' })
 
-      if (code) {
-        account.code = code
-        await account.save()
+        // provide refresh token and create new batch
         await refreshTokens(account)
-
-        // create batch
         const newBatch = new Batch({ business: accountId })
         await newBatch.save()
 
         return res.status(200).json({ message: 'Account verified successfully' })
       } else {
-        await account.delete()
+        const account = await Auth.findByIdAndDelete(accountId)
+        if (!account) return res.status(404).json({ message: 'Account not found' })
+
         return res.status(200).json({ message: 'Account deleted successfully' })
       }
     } catch (error) {
@@ -86,7 +82,7 @@ const authController = {
     }
   },
 
-  logout: async (req: typeof Request, res: typeof Response) => {
+  logout: async (req: Request, res: Response) => {
     try {
       const account = await Auth.findByIdAndUpdate(req.userId, { refreshToken: null })
       if (!account) return res.status(400).json({ message: 'Account not found' })
@@ -97,13 +93,13 @@ const authController = {
     }
   },
 
-  refreshToken: async (req: typeof Request, res: typeof Response) => {
+  refreshToken: async (req: Request, res: Response) => {
     try {
       const { refreshToken } = req.body
-      if (!refreshToken) return res.status(401).json({ message: 'Refresh token required' })
 
       const account = await Auth.findOne({ refreshToken })
       if (!account) return res.status(403).json({ message: 'Invalid refresh token' })
+
       const tokens = await refreshTokens(account)
 
       return res.status(200).json({ message: 'Token refreshed successfully', data: tokens })
@@ -112,7 +108,7 @@ const authController = {
     }
   },
 
-  getDetails: async (req: typeof Request, res: typeof Response) => {
+  getDetails: async (req: Request, res: Response) => {
     try {
       const account = await Auth.findById(req.userId)
       if (!account) return res.status(404).json({ message: 'Account not found' })
@@ -126,5 +122,3 @@ const authController = {
     }
   }
 }
-
-module.exports = authController

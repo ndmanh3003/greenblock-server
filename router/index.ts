@@ -1,12 +1,10 @@
-const Application = require('express')
-const authRouter = require('./auth')
-const batchRouter = require('./batch')
-const productRouter = require('./product')
+import { Application } from 'express'
+import authRouter from './auth'
+import batchRouter from './batch'
+import productRouter from './product'
 
-function router(app: typeof Application) {
+export default function router(app: Application) {
   app.use('/auth', authRouter)
   app.use('/batch', batchRouter)
   app.use('/product', productRouter)
 }
-
-module.exports = router

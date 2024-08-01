@@ -1,16 +1,21 @@
-const mongoose = require('mongoose')
-const softDelete = require('../../plugins/softDelete')
+import mongoose from 'mongoose'
+import { softDelete } from '../../plugins'
 
-const authSchema = require('./Auth')
-const productSchema = require('./Product')
-const batchSchema = require('./Batch')
+// Schema
+import { authSchema, IAuth } from './Auth'
+import { productSchema, IProduct } from './Product'
+import { batchSchema, IBatch } from './Batch'
 
-//! Apply soft delete to schema
+// Soft delete
 softDelete(authSchema)
 softDelete(productSchema)
+softDelete(batchSchema)
 
-module.exports = {
-  Auth: mongoose.model('Auth', authSchema),
-  Product: mongoose.model('Product', productSchema),
-  Batch: mongoose.model('Batch', batchSchema)
-}
+const Auth = mongoose.model<IAuth>('Auth', authSchema)
+const Product = mongoose.model<IProduct>('Product', productSchema)
+const Batch = mongoose.model<IBatch>('Batch', batchSchema)
+
+export { Auth, Product, Batch }
+export * from './Auth'
+export * from './Product'
+export * from './Batch'

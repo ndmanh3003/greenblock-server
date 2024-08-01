@@ -62,11 +62,9 @@ contract HistoryApi {
   function addStatus(uint256 recordId, string memory desc, string[] memory img, bool isHarvested) public onlyOwner {
     require(recordId < records.length, 'Record does not exist');
     Record storage record = records[recordId];
+    require(!record.isHarvested, 'Product is already harvested');
 
-    if (isHarvested) {
-      require(!record.isHarvested, 'Product is already harvested');
-      record.isHarvested = true;
-    }
+    if (isHarvested) record.isHarvested = true;
 
     Status memory newStatus = Status({ time: block.timestamp, desc: desc, img: img });
     record.statuses[record.statusCount++] = newStatus;

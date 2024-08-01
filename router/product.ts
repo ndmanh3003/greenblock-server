@@ -1,22 +1,23 @@
-const router = require('express').Router()
-const productController = require('../app/controllers/productController')
-const { isBusiness } = require('../middleware/role')
-const verifyToken = require('../middleware/auth')
+import { Router } from 'express'
+const router = Router()
 
-// body { name, variety, land, inspector, quanity }
+import { productController } from '../app/controllers'
+import { isBusiness, verifyToken } from '../middleware'
+
+// body { name, variety, land, inspector, quantityIn }
 router.post('/', isBusiness, productController.createProduct)
 
-// body { EXCEPT: record, export_at, land, variety }
-router.put('/:id', verifyToken, productController.updateProduct)
+// body { productId, img, desc, isHarvested, code, businessId }
+router.put('/record/:isDelete', productController.handleStatus)
+
+// body { EXCEPT: record, exportAt, land, variety, quantityIn }
+router.put('/', verifyToken, productController.updateProduct)
 
 router.delete('/:id', isBusiness, productController.deleteProduct)
 
 // body { code, businessId } -> If business/inspector, work with header token
-router.get('/', verifyToken, productController.getAllProducts)
+router.get('/', productController.getAllProducts)
 
-router.get('/:id', productController.getProductDetails)
+router.get('/:productId', productController.getProductDetails)
 
-// body { productId, img, desc, isHarvested }
-router.put('/:isDelete', productController.handleStatus)
-
-module.exports = router
+export default router

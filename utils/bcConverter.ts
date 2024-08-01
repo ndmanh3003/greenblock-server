@@ -25,6 +25,6 @@ export function toStatus(_status: IStatus) {
 }
 
 export function toRecord(_record: { 0: IStatus[]; 1: boolean; 2: IBigNumber }) {
-  const status = _record[0].map((s) => toStatus(s))
-  return status
+  const record = _record[0].map((s) => toStatus(s))
+  return record
 }
