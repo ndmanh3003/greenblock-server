@@ -26,9 +26,7 @@ export const authSchema = new Schema<IAuth>(
     },
     password: {
       type: String,
-      required: true,
-      minlength: 6,
-      maxlength: 30
+      required: true
     },
     cert: {
       type: String,

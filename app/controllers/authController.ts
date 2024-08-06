@@ -1,13 +1,13 @@
 import { Request, Response } from 'express'
 import { refreshTokens } from '../../utils/refreshTokens'
 import { Batch, Auth } from '../models'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 export const authController = {
   register: async (req: Request, res: Response) => {
     try {
       const { name, email, password, isBusiness, cert } = req.body
-      const hashedPassword = await bcrypt.hash(password, process.env.SALT_ROUNDS)
+      const hashedPassword = await bcrypt.hash(password, Number(process.env.SALT_ROUNDS))
 
       const isExisting = await Auth.findOne({ email })
       if (isExisting) return res.status(400).json({ message: 'Email already exists' })
