@@ -1,12 +1,18 @@
 import { Request, Response } from 'express'
 import { refreshTokens } from '../../utils/refreshTokens'
 import { Batch, Auth } from '../models'
+import bcrypt from 'bcrypt'
 
 export const authController = {
   register: async (req: Request, res: Response) => {
     try {
       const { name, email, password, isBusiness, cert } = req.body
-      const newAuth = new Auth({ name, email, password, isBusiness, cert })
+      const hashedPassword = await bcrypt.hash(password, process.env.SALT_ROUNDS)
+
+      const isExisting = await Auth.findOne({ email })
+      if (isExisting) return res.status(400).json({ message: 'Email already exists' })
+
+      const newAuth = new Auth({ name, email, password: hashedPassword, isBusiness, cert })
       await newAuth.save()
 
       return res.status(201).json({ message: 'Registration successful' })
@@ -18,10 +24,13 @@ export const authController = {
   login: async (req: Request, res: Response) => {
     try {
       const { email, password, isBusiness } = req.body
-      const auth = await Auth.findOne({ email, password, isBusiness })
 
+      const auth = await Auth.findOne({ email, isBusiness })
       if (!auth) return res.status(400).json({ message: 'Invalid credentials' })
       if (!auth.isVerified) return res.status(401).json({ message: 'Account not verified' })
+
+      const isPasswordValid = await bcrypt.compare(password, auth.password)
+      if (!isPasswordValid) return res.status(400).json({ message: 'Invalid credentials' })
 
       const tokens = await refreshTokens(auth)
 
@@ -38,7 +47,6 @@ export const authController = {
     try {
       const { isBusiness } = req.params
       const { admin_pass } = req.body
-
       let query = {}
 
       if (admin_pass === process.env.ADMIN_PASSWORD) query = { isVerified: false }
@@ -46,7 +54,7 @@ export const authController = {
       else query = { isVerified: true }
 
       const accounts = (await Auth.find({ ...query, isBusiness })).map((account) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+        // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
         const { password, refreshToken, ...data } = account.toObject()
         return data
       })
@@ -65,7 +73,6 @@ export const authController = {
         const account = await Auth.findOneAndUpdate({ _id: accountId, code: null }, { isVerified }, { new: true })
         if (!account) return res.status(404).json({ message: 'Account not found or already verified' })
 
-        // provide refresh token and create new batch
         await refreshTokens(account)
         const newBatch = new Batch({ business: accountId })
         await newBatch.save()
@@ -113,7 +120,7 @@ export const authController = {
       const account = await Auth.findById(req.userId)
       if (!account) return res.status(404).json({ message: 'Account not found' })
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+      // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
       const { password, refreshToken, ...data } = account.toObject()
 
       return res.status(200).json({ message: 'Account details retrieved successfully', data })
