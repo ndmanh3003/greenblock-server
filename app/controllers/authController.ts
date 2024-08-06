@@ -79,10 +79,8 @@ export const authController = {
 
         return res.status(200).json({ message: 'Account verified successfully' })
       } else {
-        const account = await Auth.findById(accountId)
+        const account = await Auth.deleteById(accountId)
         if (!account) return res.status(404).json({ message: 'Account not found' })
-
-        await account.delete()
 
         return res.status(200).json({ message: 'Account deleted successfully' })
       }
