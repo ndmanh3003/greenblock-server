@@ -1,16 +1,6 @@
-import { Schema, Document } from 'mongoose'
+import { Schema } from 'mongoose'
 
-export interface IAuth extends Document {
-  name: string
-  isVerified?: boolean
-  email: string
-  password?: string
-  isBusiness: boolean
-  cert: string
-  refreshToken?: string
-}
-
-export const authSchema = new Schema<IAuth>(
+export const authSchema = new Schema(
   {
     name: {
       type: String,

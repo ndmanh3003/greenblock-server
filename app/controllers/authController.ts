@@ -9,7 +9,7 @@ export const authController = {
       const { name, email, password, isBusiness, cert } = req.body
       const hashedPassword = await bcrypt.hash(password, Number(process.env.SALT_ROUNDS))
 
-      const isExisting = await Auth.findOne({ email })
+      const isExisting = await Auth.findOneWithDeleted({ email })
       if (isExisting) return res.status(400).json({ message: 'Email already exists' })
 
       const newAuth = new Auth({ name, email, password: hashedPassword, isBusiness, cert })
@@ -70,7 +70,7 @@ export const authController = {
       const { accountId, isVerified } = req.body
 
       if (isVerified) {
-        const account = await Auth.findOneAndUpdate({ _id: accountId, code: null }, { isVerified }, { new: true })
+        const account = await Auth.findOneAndUpdate({ _id: accountId, isVerified: false }, { isVerified })
         if (!account) return res.status(404).json({ message: 'Account not found or already verified' })
 
         await refreshTokens(account)
@@ -79,8 +79,10 @@ export const authController = {
 
         return res.status(200).json({ message: 'Account verified successfully' })
       } else {
-        const account = await Auth.findByIdAndDelete(accountId)
+        const account = await Auth.findById(accountId)
         if (!account) return res.status(404).json({ message: 'Account not found' })
+
+        await account.delete()
 
         return res.status(200).json({ message: 'Account deleted successfully' })
       }

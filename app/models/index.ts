@@ -1,21 +1,18 @@
-import mongoose from 'mongoose'
-import { softDelete } from '../../plugins'
-
-// Schema
-import { authSchema, IAuth } from './Auth'
+import mongoose, { InferSchemaType, Model } from 'mongoose'
+import { authSchema } from './Auth'
 import { productSchema, IProduct } from './Product'
 import { batchSchema, IBatch } from './Batch'
+import MongooseDelete, { SoftDeleteDocument, SoftDeleteModel } from 'mongoose-delete'
 
-// Soft delete
-softDelete(authSchema)
-softDelete(productSchema)
-softDelete(batchSchema)
+mongoose.plugin(MongooseDelete, { deletedAt: true, overrideMethods: 'all' })
 
-const Auth = mongoose.model<IAuth>('Auth', authSchema)
-const Product = mongoose.model<IProduct>('Product', productSchema)
-const Batch = mongoose.model<IBatch>('Batch', batchSchema)
+export interface IAuth extends Document, InferSchemaType<typeof authSchema>, SoftDeleteDocument {}
+export interface IAuthModel extends Model<IAuth>, SoftDeleteModel<IAuth> {}
+export const Auth = mongoose.model<IAuth, IAuthModel>('Auth', authSchema)
 
-export { Auth, Product, Batch }
+export const Product = mongoose.model<IProduct>('Product', productSchema)
+export const Batch = mongoose.model<IBatch>('Batch', batchSchema)
+
 export * from './Auth'
 export * from './Product'
 export * from './Batch'
