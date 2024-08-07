@@ -45,7 +45,7 @@ export const batchController = {
     }
   },
 
-  updateAllItemNames: async (req: Request, res: Response) => {
+  updateAllItems: async (req: Request, res: Response) => {
     try {
       const { type } = req.params
       if (!isValidType(type)) throw new Error('Invalid item type')
