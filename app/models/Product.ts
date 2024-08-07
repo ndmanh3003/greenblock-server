@@ -17,56 +17,22 @@ export const roleCurrent = {
 
 export const productSchema = new Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      minlength: 3,
-      maxlength: 50
-    },
-    record: {
-      type: Number,
-      required: true
-    },
+    name: { type: String, required: true, minlength: 3, maxlength: 50 },
+    record: { type: Number, required: true },
     desc: String,
-    current: {
-      type: String,
-      default: allCurrent.PLANTING,
-      enum: [...Object.values(allCurrent)]
-    },
-    quantityIn: {
-      type: Number,
-      required: true,
-      min: 1
-    },
+    current: { type: String, default: allCurrent.PLANTING, enum: [...Object.values(allCurrent)] },
+    quantityIn: { type: Number, required: true, min: 1 },
     quantityOut: Number,
     exportAt: Date,
 
     // batch
-    business: {
-      type: Schema.Types.ObjectId,
-      ref: 'Auth',
-      required: true
-    },
-    variety: {
-      type: String,
-      required: true
-    },
-    land: {
-      type: String,
-      required: true
-    },
+    business: { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
+    variety: { type: String, required: true },
+    land: { type: String, required: true },
 
     // inspector
-    inspector: {
-      type: Schema.Types.ObjectId,
-      ref: 'Auth',
-      required: true
-    },
-    quality: {
-      type: Number,
-      min: 0,
-      max: 5
-    },
+    inspector: { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
+    quality: { type: Number, min: 0, max: 5 },
     cert: String
   },
   {

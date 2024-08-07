@@ -2,7 +2,7 @@ import mongoose, { InferSchemaType, Model } from 'mongoose'
 import MongooseDelete, { SoftDeleteDocument, SoftDeleteModel } from 'mongoose-delete'
 import { authSchema } from './Auth'
 import { productSchema } from './Product'
-import { batchSchema, IBatch } from './Batch'
+import { batchSchema, varietySchema, landSchema } from './Batch'
 
 mongoose.plugin(MongooseDelete, { deletedAt: true, overrideMethods: 'all' })
 
@@ -14,7 +14,21 @@ export interface IProduct extends Document, InferSchemaType<typeof productSchema
 export interface IProductModel extends Model<IProduct>, SoftDeleteModel<IProduct> {}
 export const Product = mongoose.model<IProduct, IProductModel>('Product', productSchema)
 
-export const Batch = mongoose.model<IBatch>('Batch', batchSchema)
+export interface IVariety extends Document, InferSchemaType<typeof varietySchema>, SoftDeleteDocument {}
+export interface IVarietyModel extends Model<IVariety>, SoftDeleteModel<IVariety> {}
+export const Variety = mongoose.model('Variety', varietySchema)
+
+export interface ILand extends Document, InferSchemaType<typeof landSchema>, SoftDeleteDocument {}
+export interface ILandModel extends Model<ILand>, SoftDeleteModel<ILand> {}
+export const Land = mongoose.model('Land', landSchema)
+
+export interface IBatch extends Document, InferSchemaType<typeof batchSchema>, SoftDeleteDocument {}
+export interface IBatchModel extends Model<IBatch>, SoftDeleteModel<IBatch> {}
+export interface IBatchPopulated extends Omit<IBatch, 'land' | 'variety'> {
+  land: ILand[]
+  variety: IVariety[]
+}
+export const Batch = mongoose.model('Batch', batchSchema)
 
 export * from './Auth'
 export * from './Product'
