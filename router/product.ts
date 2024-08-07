@@ -2,22 +2,19 @@ import { Router } from 'express'
 const router = Router()
 
 import { productController } from '../app/controllers'
-import { isBusiness, verifyToken } from '../middleware'
+import { isBusiness, validateSchema, verifyToken } from '../middleware'
+import * as schema from './product.schema'
 
-// body { name, variety, land, inspector, quantityIn }
-router.post('/', isBusiness, productController.createProduct)
+router.post('/', isBusiness, validateSchema(schema.createProductSchema), productController.createProduct)
 
-// body { productId, img, desc, isHarvested, code, businessId }
-router.put('/record/:isDelete', productController.handleStatus)
+router.put('/record/:isDelete', validateSchema(schema.handleStatusSchema), productController.handleStatus)
 
-// body { EXCEPT: record, exportAt, land, variety, quantityIn }
-router.put('/', verifyToken, productController.updateProduct)
+router.put('/', verifyToken, validateSchema(schema.updateProductSchema), productController.updateProduct)
 
-router.delete('/:id', isBusiness, productController.deleteProduct)
+router.delete('/:productId', isBusiness, validateSchema(schema.deleteProductSchema), productController.deleteProduct)
 
-// body { code, businessId } -> If business/inspector, work with header token
-router.get('/', productController.getAllProducts)
+router.get('/', validateSchema(schema.getAllProductsSchema), productController.getAllProducts)
 
-router.get('/:productId', productController.getProductDetails)
+router.get('/:productId', validateSchema(schema.getProductDetailsSchema), productController.getProductDetails)
 
 export default router

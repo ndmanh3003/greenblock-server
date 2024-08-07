@@ -1,6 +1,4 @@
-import { Types, Schema, Document, Query } from 'mongoose'
-import { NextFunction } from 'express'
-import { Batch } from '.'
+import { Schema } from 'mongoose'
 
 export const allCurrent = {
   PLANTING: 'planting',
@@ -17,23 +15,7 @@ export const roleCurrent = {
   business: [allCurrent.EXPORTED, allCurrent.SOLD]
 }
 
-export interface IProduct extends Document {
-  name: string
-  record: number
-  desc: string
-  quality: number
-  cert: string
-  variety: string
-  land: string
-  exportAt: Date
-  current: string
-  business: Types.ObjectId
-  inspector: Types.ObjectId
-  quantityIn: number
-  quantityOut: number
-}
-
-export const productSchema = new Schema<IProduct>(
+export const productSchema = new Schema(
   {
     name: {
       type: String,
@@ -91,26 +73,3 @@ export const productSchema = new Schema<IProduct>(
     timestamps: true
   }
 )
-
-const updateMiddleware = async function (this: Query<IProduct, IProduct>, next: NextFunction) {
-  const update = this.getUpdate() as IProduct
-  const document = await this.model.findOne(this.getQuery())
-
-  if (roleCurrent.business.includes(update.current) && !document.exportAt) update.exportAt = new Date()
-
-  if (update.current != allCurrent.PLANTING) {
-    if (!document.quantityOut && !update.quantityOut) throw new Error('Quantity out is required')
-
-    // update batch
-    const batch = await Batch.findOne({ business: document.business })
-    const landBatch = batch.land.find((land) => land._id == document.land)
-    landBatch.product = landBatch.product.filter((id) => id.equals(document._id))
-
-    await batch.save()
-  }
-  next()
-}
-
-productSchema.pre<Query<IProduct, IProduct>>('findOneAndUpdate', updateMiddleware)
-productSchema.pre<Query<IProduct, IProduct>>('save', updateMiddleware)
-productSchema.pre<Query<IProduct, IProduct>>('findOneAndDelete', updateMiddleware)

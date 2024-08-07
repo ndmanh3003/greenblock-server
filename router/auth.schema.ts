@@ -1,4 +1,5 @@
 import Joi from 'joi'
+import { objectIdValidator } from '../utils'
 
 export const registerSchema = {
   body: Joi.object({
@@ -20,7 +21,7 @@ export const loginSchema = {
 
 export const verifyAccountSchema = {
   body: Joi.object({
-    accountId: Joi.string().required(),
+    accountId: Joi.string().custom(objectIdValidator, 'valid ObjectId').required(),
     isVerified: Joi.boolean().required()
   })
 }
