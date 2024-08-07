@@ -21,12 +21,12 @@ export const updateAllItemsSchema = {
     items: Joi.array()
       .items(
         Joi.object({
-          name: Joi.string().optional(),
           itemId: Joi.string().custom(objectIdValidator, 'valid ObjectId').optional(),
-          quantity: Joi.when('..type', {
-            is: 'variety',
-            then: Joi.number().optional(),
-            otherwise: Joi.forbidden()
+          quantity: Joi.number().optional(),
+          name: Joi.string().when('itemId', {
+            is: Joi.exist(),
+            then: Joi.optional(),
+            otherwise: Joi.required()
           })
         })
       )

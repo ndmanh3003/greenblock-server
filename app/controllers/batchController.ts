@@ -1,15 +1,17 @@
 import { Request, Response } from 'express'
-import { ILand, IVariety, Batch, IBatchPopulated } from './../models'
+import { Batch, IBatchPopulated, IBatch, Item, IItem } from './../models'
+import { Types } from 'mongoose'
 
-const findBatch = async (userId: string): Promise<IBatchPopulated> => {
+const findBatch = async (userId: string, isPopulated = false): Promise<IBatchPopulated | IBatch> => {
   let batch = await Batch.findOne({ business: userId })
-
   if (!batch) {
     batch = new Batch({ business: userId })
     await batch.save()
   }
 
-  return batch.populate('land variety')
+  if (isPopulated) batch = await batch.populate('land variety')
+
+  return batch
 }
 
 export const batchController = {
@@ -17,16 +19,16 @@ export const batchController = {
     try {
       const { type } = req.params as { type: 'land' | 'variety' }
 
-      const batch = await findBatch(req.userId)
-      const items = batch[type] as (ILand | IVariety)[]
+      const batch = (await findBatch(req.userId, true)) as IBatchPopulated
+      const items = batch[type]
 
       let additionalData = {}
       if (type === 'land') {
-        const empty = items.filter((land: ILand) => !land.product.length).length
+        const empty = items.filter((land) => !land.product.length).length
         const planting = items.length - empty
         additionalData = { empty, planting }
       } else {
-        const empty = items.filter((variety: IVariety) => variety.quantity === 0).length
+        const empty = items.filter((variety) => variety.metadata.quantity === 0).length
         const available = items.length - empty
         additionalData = { empty, available }
       }
@@ -42,57 +44,50 @@ export const batchController = {
 
   updateAllItems: async (req: Request, res: Response) => {
     try {
-      // const { type } = req.params as { type: 'land' | 'variety' }
-      // const items: { name?: string; quantity?: number; itemId?: string }[] = req.body.items
+      const { type } = req.params as { type: 'land' | 'variety' }
+      const items: { name?: string; quantity?: number; itemId?: string }[] = req.body.items
 
-      // const batch = await findBatch(req.userId)
-      // const Model = type === 'land' ? Land : Variety
+      const batch = (await findBatch(req.userId)) as IBatch
 
-      // // Remove items not present in the incoming items array
-      // const itemIdsToKeep = items.map((item) => item.itemId).filter((id) => id)
-      // const itemsToRemove = await Model.findOne({
-      //   _id: { $nin: itemIdsToKeep },
-      //   [type]: batch._id
-      // })
+      // Delete items that are not in the new list
+      const itemIdsToKeep = items.map((item) => item.itemId).filter((id) => !!id)
+      const itemsToRemove = await Item.find({ _id: { $nin: itemIdsToKeep }, type })
 
-      // for (const itemToRemove of itemsToRemove) {
-      //   await itemToRemove.delete() // This uses the soft delete functionality
-      //   batch[type] = batch[type].filter((id) => !id.equals(itemToRemove._id))
-      // }
+      for (const itemToRemove of itemsToRemove) {
+        await itemToRemove.delete()
+        batch[type] = batch[type].filter((i) => i._id != itemToRemove._id)
+      }
 
-      // for (const item of items) {
-      //   if (item.itemId) {
-      //     // Update existing item
-      //     const updatedItem = await Model.findByIdAndUpdate(
-      //       item.itemId,
-      //       {
-      //         $set: {
-      //           name: item.name,
-      //           ...(type === 'variety' && { quantity: Math.max(item.quantity || 0, 0) })
-      //         }
-      //       },
-      //       { new: true, runValidators: true }
-      //     )
+      for (const item of items) {
+        if (item.itemId) {
+          // Update existing item
+          const updatedItem: IItem = await Item.findOneAndUpdateWithDeleted(
+            { _id: item.itemId },
+            {
+              ...(item.name && { name: item.name }),
+              ...(type === 'variety' && { 'metadata.quantity': Math.max(item.quantity || 0, 0) })
+            },
+            { new: true, runValidators: true }
+          )
 
-      //     if (updatedItem.deletedAt) {
-      //       await updatedItem.restore() // Restore if soft deleted
-      //       if (!batch[type].includes(updatedItem._id)) {
-      //         batch[type].push(updatedItem._id)
-      //       }
-      //     }
-      //   } else {
-      //     // Create new item
-      //     const newItem = new Model({
-      //       name: item.name,
-      //       ...(type === 'variety' && { quantity: Math.max(item.quantity || 0, 0) }),
-      //       [type]: batch._id
-      //     })
-      //     await newItem.save()
-      //     batch[type].push(newItem._id)
-      //   }
-      // }
+          if (updatedItem?.deletedAt) {
+            await updatedItem.restore() // Restore if deleted
+            const id = updatedItem._id as Types.ObjectId
+            if (!batch[type].includes(id)) batch[type].push(id)
+          }
+        } else {
+          // Create new item
+          const newItem = new Item({
+            name: item.name,
+            type,
+            ...(type === 'variety' && { 'metadata.quantity': Math.max(item.quantity || 0, 0) })
+          })
+          await newItem.save()
+          batch[type].push(newItem._id as Types.ObjectId)
+        }
+      }
 
-      // await batch.save()
+      await batch.save()
 
       return res.status(200).json({ message: 'Items updated successfully' })
     } catch (error) {
