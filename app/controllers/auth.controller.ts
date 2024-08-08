@@ -45,7 +45,7 @@ export const authController = {
 
   getAllAccounts: async (req: Request, res: Response) => {
     try {
-      const { isBusiness } = req.params
+      const isBusiness = req.params.type === 'business'
       const { admin_pass } = req.body
       let query = {}
 

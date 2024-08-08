@@ -28,7 +28,7 @@ const removeProductFromLand = async (product: IProduct) => {
   const landBatch = await Item.findById(product.land)
   if (!landBatch) return
 
-  const index = landBatch.product.findIndex((p) => p == product._id)
+  const index = landBatch.product.findIndex((p) => p.equals(product._id as Types.ObjectId))
   if (index == -1) return
 
   landBatch.product.splice(index, 1)
@@ -196,8 +196,7 @@ export const productController = {
     try {
       await verifyCode(req)
 
-      const { isDelete } = req.params
-      const { productId, img, desc, isHarvested, businessId, quantityOut } = req.body
+      const { isDelete, productId, img, desc, isHarvested, businessId, quantityOut } = req.body
 
       const product = await Product.findOne({
         _id: productId,
@@ -213,7 +212,7 @@ export const productController = {
         return res.status(200).json({ message: 'Status deleted successfully' })
       }
 
-      await contractInstance.addStatus(product.record, desc, img, Boolean(isHarvested))
+      await contractInstance.addStatus(product.record, desc, img, isHarvested)
       if (isHarvested) {
         product.current = allCurrent.HARVESTED
         product.quantityOut = quantityOut

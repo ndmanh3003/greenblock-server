@@ -7,7 +7,7 @@ import * as schema from './product.schema'
 
 router.post('/', isBusiness, validateSchema(schema.createProductSchema), productController.createProduct)
 
-router.put('/record/:isDelete', validateSchema(schema.handleStatusSchema), productController.handleStatus)
+router.put('/record/', validateSchema(schema.handleStatusSchema), productController.handleStatus)
 
 router.put('/', verifyToken, validateSchema(schema.updateProductSchema), productController.updateProduct)
 

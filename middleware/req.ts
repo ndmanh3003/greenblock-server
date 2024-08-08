@@ -12,7 +12,7 @@ export const validateSchema = (schema: {
 
     ;['body', 'query', 'params'].forEach((key) => {
       if (schema[key]) {
-        const { error } = schema[key].validate(req[key as keyof typeof req], { abortEarly: false })
+        const { error } = schema[key].validate(req[key as keyof typeof req], { convert: true })
         if (error) validationErrors.push(...error.details.map((detail) => detail.message))
       }
     })

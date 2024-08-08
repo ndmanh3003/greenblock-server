@@ -10,7 +10,7 @@ router.post('/register', validateSchema(schema.registerSchema), authController.r
 
 router.post('/login', validateSchema(schema.loginSchema), authController.login)
 
-router.get('/:isBusiness', validateSchema(schema.getAllAccountsSchema), authController.getAllAccounts)
+router.get('/:type', validateSchema(schema.getAllAccountsSchema), authController.getAllAccounts)
 
 router.put('/', validateSchema(schema.verifyAccountSchema), authController.verifyAccount)
 

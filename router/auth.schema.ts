@@ -34,7 +34,7 @@ export const refreshTokenSchema = {
 
 export const getAllAccountsSchema = {
   params: Joi.object({
-    isBusiness: Joi.boolean().required()
+    type: Joi.string().valid('business', 'inspector').required()
   }),
   body: Joi.object({
     admin_pass: Joi.string().optional()

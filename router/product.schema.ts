@@ -15,19 +15,31 @@ export const createProductSchema = {
 export const handleStatusSchema = {
   body: Joi.object({
     productId: Joi.string().custom(objectIdValidator, 'valid ObjectId').required(),
-    img: Joi.array().items(Joi.string()).required(),
-    desc: Joi.string().required(),
-    isHarvested: Joi.boolean().required(),
+    img: Joi.array()
+      .items(Joi.string())
+      .when('isDelete', {
+        is: true,
+        then: Joi.forbidden(),
+        otherwise: Joi.array().items(Joi.string()).required()
+      }),
+    desc: Joi.string().when('isDelete', {
+      is: true,
+      then: Joi.forbidden(),
+      otherwise: Joi.string().required()
+    }),
+    isHarvested: Joi.boolean().when('isDelete', {
+      is: true,
+      then: Joi.forbidden(),
+      otherwise: Joi.boolean().required()
+    }),
     code: Joi.string().required(),
     businessId: Joi.string().custom(objectIdValidator, 'valid ObjectId').required(),
     quantityOut: Joi.when('isHarvested', {
       is: true,
       then: Joi.number().min(0).required(),
       otherwise: Joi.forbidden()
-    })
-  }),
-  params: Joi.object({
-    isDelete: Joi.boolean().required()
+    }),
+    isDelete: Joi.boolean().optional()
   })
 }
 
