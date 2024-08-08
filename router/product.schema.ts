@@ -8,7 +8,7 @@ export const createProductSchema = {
     variety: Joi.string().required(),
     land: Joi.string().required(),
     inspector: Joi.string().required(),
-    quantityIn: Joi.number().required()
+    quantityIn: Joi.number().min(0).required()
   })
 }
 
@@ -22,7 +22,7 @@ export const handleStatusSchema = {
     businessId: Joi.string().custom(objectIdValidator, 'valid ObjectId').required(),
     quantityOut: Joi.when('isHarvested', {
       is: true,
-      then: Joi.number().required(),
+      then: Joi.number().min(0).required(),
       otherwise: Joi.forbidden()
     })
   }),
@@ -38,10 +38,11 @@ export const updateProductSchema = {
     current: Joi.string()
       .valid(...Object.values(allCurrent))
       .optional(),
-    quantityOut: Joi.number().optional(),
+    quantityOut: Joi.number().min(0).optional(),
     inspector: Joi.string().optional(),
     quality: Joi.number().min(0).max(5).optional(),
-    cert: Joi.string().optional()
+    cert: Joi.string().optional(),
+    productId: Joi.string().custom(objectIdValidator, 'valid ObjectId').required()
   })
 }
 

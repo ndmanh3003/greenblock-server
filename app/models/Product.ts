@@ -1,4 +1,5 @@
-import { Schema } from 'mongoose'
+import { Schema, UpdateQuery } from 'mongoose'
+import { IProduct } from '.'
 
 export const allCurrent = {
   PLANTING: 'planting',
@@ -39,3 +40,12 @@ export const productSchema = new Schema(
     timestamps: true
   }
 )
+
+productSchema.pre('findOneAndUpdate', async function () {
+  const update = this.getUpdate() as UpdateQuery<IProduct>
+
+  if (update.current && roleCurrent.business.includes(update.current)) {
+    const docToUpdate = (await this.model.findOne(this.getQuery())) as IProduct | null
+    if (docToUpdate && !docToUpdate.exportAt) update.exportAt = new Date()
+  }
+})
