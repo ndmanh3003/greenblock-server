@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { IBigNumber, toNumber, toRecord } from './../../utils'
+import { IBigNumber, toNumber, toRecord } from '../../utils'
 import { Product, Batch, allCurrent, roleCurrent, IProduct, Item } from '../models'
 import { verifyToken } from '../../middleware'
 import { contractInstance } from '../../plugins'

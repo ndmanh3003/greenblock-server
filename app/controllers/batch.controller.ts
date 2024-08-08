@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Batch, IBatchPopulated, IBatch, Item, IItem } from './../models'
+import { Batch, IBatchPopulated, IBatch, Item, IItem } from '../models'
 import { Types } from 'mongoose'
 
 const findBatch = async (userId: string, isPopulated = false): Promise<IBatchPopulated | IBatch> => {
@@ -62,10 +62,10 @@ export const batchController = {
         if (item.itemId) {
           // Update existing item
           const updatedItem: IItem = await Item.findOneAndUpdateWithDeleted(
-            { _id: item.itemId },
+            { _id: item.itemId, type },
             {
               ...(item.name && { name: item.name }),
-              ...(type === 'variety' && { 'metadata.quantity': Math.max(item.quantity || 0, 0) })
+              ...(type === 'variety' && item.quantity != undefined && { 'metadata.quantity': item.quantity || 0 })
             },
             { new: true, runValidators: true }
           )
@@ -80,7 +80,7 @@ export const batchController = {
           const newItem = new Item({
             name: item.name,
             type,
-            ...(type === 'variety' && { 'metadata.quantity': Math.max(item.quantity || 0, 0) })
+            ...(type === 'variety' && { 'metadata.quantity': item.quantity || 0 })
           })
           await newItem.save()
           batch[type].push(newItem._id as Types.ObjectId)

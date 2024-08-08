@@ -1,7 +1,7 @@
 import { Application } from 'express'
-import authRouter from './auth'
-import batchRouter from './batch'
-import productRouter from './product'
+import authRouter from './auth.router'
+import batchRouter from './batch.router'
+import productRouter from './product.router'
 
 export function router(app: Application) {
   app.use('/auth', authRouter)

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
-import { refreshTokens } from '../../utils/refreshTokens'
-import { Batch, Auth } from '../models'
+import { refreshTokens } from '../../utils/token'
+import { Auth } from '../models'
 import bcrypt from 'bcryptjs'
 
 export const authController = {
@@ -72,10 +72,6 @@ export const authController = {
       if (isVerified) {
         const account = await Auth.findOneAndUpdate({ _id: accountId, isVerified: false }, { isVerified })
         if (!account) return res.status(404).json({ message: 'Account not found or already verified' })
-
-        await refreshTokens(account)
-        const newBatch = new Batch({ business: accountId })
-        await newBatch.save()
 
         return res.status(200).json({ message: 'Account verified successfully' })
       } else {

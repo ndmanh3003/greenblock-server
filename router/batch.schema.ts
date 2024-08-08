@@ -22,7 +22,7 @@ export const updateAllItemsSchema = {
       .items(
         Joi.object({
           itemId: Joi.string().custom(objectIdValidator, 'valid ObjectId').optional(),
-          quantity: Joi.number().optional(),
+          quantity: Joi.number().min(0).optional(),
           name: Joi.string().when('itemId', {
             is: Joi.exist(),
             then: Joi.optional(),

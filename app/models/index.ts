@@ -1,8 +1,8 @@
 import mongoose, { InferSchemaType } from 'mongoose'
 import MongooseDelete, { SoftDeleteDocument, SoftDeleteModel } from 'mongoose-delete'
-import { authSchema } from './Auth'
-import { productSchema } from './Product'
-import { batchSchema, itemSchema } from './Batch'
+import { authSchema } from './auth.model'
+import { productSchema } from './product.model'
+import { batchSchema, itemSchema } from './batch.model'
 
 mongoose.plugin(MongooseDelete, { deletedAt: true, overrideMethods: 'all' })
 
@@ -22,6 +22,6 @@ export interface IBatchPopulated extends Omit<IBatch, 'land' | 'variety'> {
   variety: IItem[]
 }
 
-export * from './Auth'
-export * from './Product'
-export * from './Batch'
+export * from './auth.model'
+export * from './product.model'
+export * from './batch.model'

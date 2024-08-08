@@ -6,7 +6,11 @@ export const itemSchema = new Schema({
   name: { type: String, required: true, minlength: 3, maxlength: 30 },
   product: { type: [Schema.Types.ObjectId], default: [], ref: 'Product' },
   type: { type: String, required: true, enum: [...validType] },
-  metadata: { type: Object, default: {} }
+  metadata: {
+    type: {
+      quantity: { type: Number, min: 0 }
+    }
+  }
 })
 
 export const batchSchema = new Schema(
@@ -20,7 +24,7 @@ export const batchSchema = new Schema(
 )
 
 itemSchema.pre('save', function (next) {
-  if (this.type === 'variety' && (!this.metadata || !this.metadata.quantity))
+  if (this.type === 'variety' && (!this.metadata || this.metadata.quantity === undefined))
     return next(new Error('Quantity is required for variety'))
   next()
 })
