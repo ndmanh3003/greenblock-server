@@ -55,7 +55,8 @@ export const batchController = {
 
       for (const itemToRemove of itemsToRemove) {
         await itemToRemove.delete()
-        batch[type] = batch[type].filter((i) => i._id != itemToRemove._id)
+        const index = batch[type].findIndex((i) => i._id == itemToRemove._id)
+        if (index > -1) batch[type].splice(index, 1)
       }
 
       for (const item of items) {

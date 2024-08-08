@@ -24,6 +24,17 @@ const joinBatch = async (product: IProduct) => {
   else product.variety = varietyBatch.name + (varietyBatch.deleted ? ' (deleted)' : '')
 }
 
+const removeProductFromLand = async (product: IProduct) => {
+  const landBatch = await Item.findById(product.land)
+  if (!landBatch) return
+
+  const index = landBatch.product.findIndex((p) => p == product._id)
+  if (index == -1) return
+
+  landBatch.product.splice(index, 1)
+  await landBatch.save()
+}
+
 export const productController = {
   createProduct: async (req: Request, res: Response) => {
     try {
@@ -136,6 +147,7 @@ export const productController = {
       const deletedProduct = await Product.findOne({ _id: productId, business: req.userId })
       if (!deletedProduct) return res.status(404).json({ message: 'Product not found' })
 
+      await removeProductFromLand(deletedProduct)
       await deletedProduct.delete()
 
       return res.status(200).json({ message: 'Product deleted successfully' })
@@ -148,16 +160,15 @@ export const productController = {
     try {
       const { isBusiness, userId } = req
       const { productId, name, desc, current, quantityOut, inspector, quality, cert } = req.body
-      let product
+      let query = {}
+      let update = {}
 
       if (isBusiness) {
         if (current && !roleCurrent.business.includes(current))
           return res.status(400).json({ message: 'Invalid status' })
 
-        product = await Product.findOneAndUpdate(
-          { _id: productId, business: userId },
-          { name, desc, current, quantityOut, inspector }
-        )
+        query = { business: userId }
+        update = { name, desc, current, quantityOut, inspector }
       } else {
         if (!current || !roleCurrent.inspector.includes(current))
           return res.status(400).json({ message: 'Invalid status' })
@@ -165,12 +176,14 @@ export const productController = {
         if (current == allCurrent.INSPECTED && !cert && !quality)
           return res.status(400).json({ message: 'Cert and quality are required' })
 
-        product = await Product.findOneAndUpdate(
-          { _id: productId, inspector: userId, current: { $ne: allCurrent.PLANTING } },
-          { cert, quality, current }
-        )
+        query = { inspector: userId }
+        update = { cert, quality, current }
       }
 
+      const product = await Product.findOneAndUpdate(
+        { _id: productId, ...query, ...(current ? { current: { $ne: allCurrent.PLANTING } } : {}) },
+        update
+      )
       if (!product) return res.status(404).json({ message: 'Product not found' })
 
       return res.status(200).json({ message: 'Product updated successfully' })
@@ -204,6 +217,8 @@ export const productController = {
       if (isHarvested) {
         product.current = allCurrent.HARVESTED
         product.quantityOut = quantityOut
+
+        await removeProductFromLand(product)
       }
       await product.save()
 
