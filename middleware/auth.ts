@@ -24,5 +24,5 @@ export const verifyToken = async (req: Request, res: Response, next?: NextFuncti
 
 const handleErrors = (error: Error, res: Response, next?: NextFunction) => {
   if (!next) throw new Error(error.message)
-  else return res.status(400).json({ message: error.message })
+  else return res.status(401).json({ message: 'Unauthorized', error: error.message })
 }

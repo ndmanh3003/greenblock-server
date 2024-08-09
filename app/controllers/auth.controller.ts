@@ -15,9 +15,9 @@ export const authController = {
       const newAuth = new Auth({ name, email, password: hashedPassword, isBusiness, cert })
       await newAuth.save()
 
-      return res.status(201).json({ message: 'Registration successful' })
+      return res.status(200).json({ message: 'Registration successful' })
     } catch (error) {
-      return res.status(400).json({ message: 'Registration failed', error: error.message })
+      return res.status(500).json({ message: 'Registration failed', error: error.message })
     }
   },
 
@@ -27,7 +27,7 @@ export const authController = {
 
       const auth = await Auth.findOne({ email, isBusiness })
       if (!auth) return res.status(400).json({ message: 'Invalid credentials' })
-      if (!auth.isVerified) return res.status(401).json({ message: 'Account not verified' })
+      if (!auth.isVerified) return res.status(403).json({ message: 'Account not verified' })
 
       const isPasswordValid = await bcrypt.compare(password, auth.password)
       if (!isPasswordValid) return res.status(400).json({ message: 'Invalid credentials' })
@@ -50,7 +50,7 @@ export const authController = {
       let query = {}
 
       if (admin_pass === process.env.ADMIN_PASSWORD) query = { isVerified: false }
-      else if (admin_pass) return res.status(401).json({ message: 'Invalid admin password' })
+      else if (admin_pass) return res.status(400).json({ message: 'Invalid admin password' })
       else query = { isVerified: true }
 
       const accounts = (await Auth.find({ ...query, isBusiness })).map((account) => {
@@ -71,7 +71,7 @@ export const authController = {
 
       if (isVerified) {
         const account = await Auth.findOneAndUpdate({ _id: accountId, isVerified: false }, { isVerified })
-        if (!account) return res.status(404).json({ message: 'Account not found or already verified' })
+        if (!account) return res.status(400).json({ message: 'Account not found or already verified' })
 
         return res.status(200).json({ message: 'Account verified successfully' })
       } else {
@@ -88,7 +88,7 @@ export const authController = {
   logout: async (req: Request, res: Response) => {
     try {
       const account = await Auth.findByIdAndUpdate(req.userId, { refreshToken: null })
-      if (!account) return res.status(400).json({ message: 'Account not found' })
+      if (!account) return res.status(404).json({ message: 'Account not found' })
 
       return res.status(200).json({ message: 'Logged out successfully' })
     } catch (error) {
@@ -98,10 +98,10 @@ export const authController = {
 
   refreshToken: async (req: Request, res: Response) => {
     try {
-      const { refreshToken } = req.body
+      const { refreshToken } = req.params
 
       const account = await Auth.findOne({ refreshToken })
-      if (!account) return res.status(403).json({ message: 'Invalid refresh token' })
+      if (!account) return res.status(404).json({ message: 'Account not found' })
 
       const tokens = await refreshTokens(account)
 

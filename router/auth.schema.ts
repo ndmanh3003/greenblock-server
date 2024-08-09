@@ -27,7 +27,7 @@ export const verifyAccountSchema = {
 }
 
 export const refreshTokenSchema = {
-  body: Joi.object({
+  params: Joi.object({
     refreshToken: Joi.string().required()
   })
 }

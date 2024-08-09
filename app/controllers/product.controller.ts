@@ -39,19 +39,18 @@ export const productController = {
   createProduct: async (req: Request, res: Response) => {
     try {
       const { name, variety, land, inspector, quantityIn } = req.body
-      if (quantityIn <= 0) return res.status(400).json({ message: 'Invalid quantity' })
 
       // batch
       const batch = await Batch.findOne({ business: req.userId })
 
       const landId = batch.land.find((l) => l == land)
-      if (!landId) return res.status(400).json({ message: 'Land not found' })
+      if (!landId) return res.status(404).json({ message: 'Land not found' })
       const landBatch = await Item.findById(land)
 
       const varietyId = batch.variety.find((v) => v == variety)
-      if (!varietyId) return res.status(400).json({ message: 'Variety not found or not enough' })
-      const varietyBatch = await Item.findById(variety)
+      if (!varietyId) return res.status(404).json({ message: 'Variety not found' })
 
+      const varietyBatch = await Item.findById(variety)
       if (varietyBatch.metadata.quantity < quantityIn) return res.status(400).json({ message: 'Variety not enough' })
 
       // record
@@ -79,7 +78,7 @@ export const productController = {
       await landBatch.save()
       await varietyBatch.save()
 
-      return res.status(201).json({ message: 'Product created successfully', data: newProduct })
+      return res.status(200).json({ message: 'Product created successfully', data: newProduct })
     } catch (error) {
       return res.status(500).json({ message: 'Failed to create product', error: error.message })
     }
@@ -203,7 +202,7 @@ export const productController = {
         business: businessId,
         current: { $in: Object.values(roleCurrent.farmer) }
       })
-      if (!product) return res.status(404).json({ message: 'Product not found or not in planting' })
+      if (!product) return res.status(400).json({ message: 'Product not found or not in planting' })
 
       if (isDelete) {
         await contractInstance.removeLatestStatus(product.record)

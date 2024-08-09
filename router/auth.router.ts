@@ -16,7 +16,7 @@ router.put('/', validateSchema(schema.verifyAccountSchema), authController.verif
 
 router.delete('/logout', verifyToken, authController.logout)
 
-router.post('/refresh', validateSchema(schema.refreshTokenSchema), authController.refreshToken)
+router.post('/refresh/:refreshToken', validateSchema(schema.refreshTokenSchema), authController.refreshToken)
 
 router.get('/', verifyToken, authController.getDetails)
 
