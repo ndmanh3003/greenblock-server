@@ -6,7 +6,7 @@ import dotenv from 'dotenv'
 import { db } from './plugins/db'
 
 const app = express()
-app.use(bodyParser.json({ limit: '50mb' }))
+app.use(bodyParser.json())
 app.use(cors())
 app.use(morgan('dev'))
 dotenv.config()

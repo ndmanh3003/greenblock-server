@@ -36,7 +36,7 @@ export const authController = {
 
       return res.status(200).json({
         message: 'Login successful',
-        data: { name: auth.name, ...tokens }
+        data: { name: auth.name, isBusiness: auth.isBusiness, ...tokens }
       })
     } catch (error) {
       return res.status(500).json({ message: 'Login failed', error: error.message })
