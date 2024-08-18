@@ -90,9 +90,8 @@ export const productController = {
 
       if (req.header('Authorization')) {
         await verifyToken(req, res)
-        if (req.isBusiness) {
-          query = { business: req.userId }
-        } else query = { current: { $ne: allCurrent.PLANTING }, inspector: req.userId }
+        if (req.isBusiness) query = { business: req.userId }
+        else query = { current: { $ne: allCurrent.PLANTING }, inspector: req.userId }
       } else {
         const { code, businessId } = req.query
         await verifyCode(code as string, businessId as string)
@@ -206,7 +205,7 @@ export const productController = {
       if (!product) return res.status(400).json({ message: 'Product not found or not in planting' })
 
       if (isDelete) {
-        await contractInstance.methods
+        await contractInstance.removeLatestStatus(product.record)
         product.current = allCurrent.PLANTING
         product.quantityOut = 0
         await product.save()
