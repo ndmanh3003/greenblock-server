@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import { Batch, IBatchPopulated, IBatch, Item, IItem } from '../models'
 import { Types } from 'mongoose'
 
-const findBatch = async (userId: string, isPopulated = false): Promise<IBatchPopulated | IBatch> => {
+export const findBatch = async (userId: string, isPopulated = false): Promise<IBatchPopulated | IBatch> => {
   let batch = await Batch.findOne({ business: userId })
   if (!batch) {
     batch = new Batch({ business: userId })
@@ -35,7 +35,7 @@ export const batchController = {
 
       return res.status(200).json({
         message: 'Items retrieved successfully',
-        data: { ...additionalData, items: items, code: batch.code }
+        data: { ...additionalData, items: items }
       })
     } catch (error) {
       return res.status(500).json({ message: 'Failed to retrieve items', error: error.message })
@@ -44,7 +44,7 @@ export const batchController = {
 
   updateAllItems: async (req: Request, res: Response) => {
     try {
-      const { type } = req.params as { type: 'land' | 'variety' }
+      const type = req.body.type as 'land' | 'variety'
       const items: { name?: string; quantity?: number; itemId?: string }[] = req.body.items
 
       const batch = (await findBatch(req.userId)) as IBatch
@@ -54,10 +54,11 @@ export const batchController = {
       const itemsToRemove = await Item.find({ _id: { $nin: itemIdsToKeep }, type })
 
       for (const itemToRemove of itemsToRemove) {
-        await itemToRemove.delete()
-        const index = batch[type].findIndex((i) => i._id == itemToRemove._id)
+        const index = batch[type].findIndex((i) => i._id.equals(itemToRemove._id as Types.ObjectId))
         if (index > -1) batch[type].splice(index, 1)
+        await itemToRemove.delete()
       }
+      console.log(batch[type])
 
       for (const item of items) {
         if (item.itemId) {

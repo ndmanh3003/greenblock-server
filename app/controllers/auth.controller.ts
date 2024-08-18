@@ -45,12 +45,12 @@ export const authController = {
 
   getAllAccounts: async (req: Request, res: Response) => {
     try {
-      const isBusiness = req.params.type === 'business'
-      const { admin_pass } = req.body
+      const { type, code } = req.query
+      const isBusiness = type === 'business'
       let query = {}
 
-      if (admin_pass === process.env.ADMIN_PASSWORD) query = { isVerified: false }
-      else if (admin_pass) return res.status(400).json({ message: 'Invalid admin password' })
+      if (code === process.env.ADMIN_PASSWORD) query = { isVerified: false }
+      else if (code) return res.status(400).json({ message: 'Invalid admin password' })
       else query = { isVerified: true }
 
       const accounts = (await Auth.find({ ...query, isBusiness })).map((account) => {

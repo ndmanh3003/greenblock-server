@@ -4,7 +4,7 @@ import { objectIdValidator } from '../utils'
 const validTypes = ['land', 'variety']
 
 export const getAllItemsSchema = {
-  params: Joi.object({
+  param: Joi.object({
     type: Joi.string()
       .valid(...validTypes)
       .required()
@@ -12,12 +12,10 @@ export const getAllItemsSchema = {
 }
 
 export const updateAllItemsSchema = {
-  params: Joi.object({
+  body: Joi.object({
     type: Joi.string()
       .valid(...validTypes)
-      .required()
-  }),
-  body: Joi.object({
+      .required(),
     items: Joi.array()
       .items(
         Joi.object({

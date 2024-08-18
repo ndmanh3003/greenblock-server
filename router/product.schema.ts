@@ -65,7 +65,7 @@ export const deleteProductSchema = {
 }
 
 export const getAllProductsSchema = {
-  body: Joi.object({
+  query: Joi.object({
     code: Joi.string().optional(),
     businessId: Joi.string().custom(objectIdValidator, 'valid ObjectId').optional()
   })

@@ -7,7 +7,7 @@ export async function refreshTokens(account: IAuth) {
   if (!isVerified) throw new Error('Account not verified')
 
   const accessToken = jwt.sign({ _id, email }, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: '10h'
+    expiresIn: '5h'
   })
   const refreshToken = jwt.sign({ _id, email }, process.env.REFRESH_TOKEN_SECRET, {
     expiresIn: '7d'

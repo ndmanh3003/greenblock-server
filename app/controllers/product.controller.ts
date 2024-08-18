@@ -4,9 +4,9 @@ import { Product, Batch, allCurrent, roleCurrent, IProduct, Item } from '../mode
 import { verifyToken } from '../../middleware'
 import { contractInstance } from '../../plugins'
 import { Types } from 'mongoose'
+import { findBatch } from './batch.controller'
 
-const verifyCode = async (req: Request) => {
-  const { code, businessId } = req.body
+const verifyCode = async (code: string, businessId: string) => {
   const business = await Batch.findOne({ code, business: businessId })
   if (!business) throw new Error('Invalid code')
 }
@@ -90,12 +90,14 @@ export const productController = {
 
       if (req.header('Authorization')) {
         await verifyToken(req, res)
-        if (req.isBusiness) query = { business: req.userId }
-        else query = { current: { $ne: allCurrent.PLANTING }, inspector: req.userId }
+        if (req.isBusiness) {
+          query = { business: req.userId }
+        } else query = { current: { $ne: allCurrent.PLANTING }, inspector: req.userId }
       } else {
-        await verifyCode(req)
+        const { code, businessId } = req.query
+        await verifyCode(code as string, businessId as string)
         query = {
-          business: req.body.businessId,
+          business: businessId,
           current: { $in: Object.values(roleCurrent.farmer) }
         }
       }
@@ -193,9 +195,8 @@ export const productController = {
 
   handleStatus: async (req: Request, res: Response) => {
     try {
-      await verifyCode(req)
-
-      const { isDelete, productId, img, desc, isHarvested, businessId, quantityOut } = req.body
+      const { isDelete, productId, img, desc, isHarvested, businessId, code, quantityOut } = req.body
+      await verifyCode(code, businessId)
 
       const product = await Product.findOne({
         _id: productId,
@@ -205,8 +206,9 @@ export const productController = {
       if (!product) return res.status(400).json({ message: 'Product not found or not in planting' })
 
       if (isDelete) {
-        await contractInstance.removeLatestStatus(product.record)
+        await contractInstance.methods
         product.current = allCurrent.PLANTING
+        product.quantityOut = 0
         await product.save()
         return res.status(200).json({ message: 'Status deleted successfully' })
       }
@@ -223,6 +225,29 @@ export const productController = {
       return res.status(200).json({ message: 'Status added successfully' })
     } catch (error) {
       return res.status(500).json({ message: 'Failed to update status', error: error.message })
+    }
+  },
+
+  getOverallProducts: async (req: Request, res: Response) => {
+    try {
+      const products = await Product.find({ business: req.userId })
+      const batch = await findBatch(req.userId, false)
+
+      return res.status(200).json({
+        message: 'Overall products retrieved successfully',
+        data: {
+          total: products.length,
+          planting: products.filter((p) => p.current == allCurrent.PLANTING).length,
+          harvested: products.filter((p) => p.current == allCurrent.HARVESTED).length,
+          inspecting: products.filter((p) => p.current == allCurrent.INSPECTING).length,
+          inspected: products.filter((p) => p.current == allCurrent.INSPECTED).length,
+          exported: products.filter((p) => p.current == allCurrent.EXPORTED).length,
+          sold: products.filter((p) => p.current == allCurrent.SOLD).length,
+          code: batch.code
+        }
+      })
+    } catch (error) {
+      return res.status(500).json({ message: 'Failed to retrieve overall products', error: error.message })
     }
   }
 }

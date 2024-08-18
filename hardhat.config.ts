@@ -2,6 +2,8 @@
  * @type import('hardhat/config').HardhatUserConfig
  */
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('dotenv').config()
 require('@nomiclabs/hardhat-ethers')
 
 const { API_URL, PRIVATE_KEY } = process.env
