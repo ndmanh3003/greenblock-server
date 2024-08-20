@@ -207,7 +207,7 @@ export const productController = {
       if (isDelete) {
         await contractInstance.removeLatestStatus(product.record)
         product.current = allCurrent.PLANTING
-        product.quantityOut = 0
+        product.quantityOut = null
         await product.save()
         return res.status(200).json({ message: 'Status deleted successfully' })
       }
