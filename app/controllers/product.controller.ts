@@ -88,7 +88,7 @@ export const productController = {
     try {
       let query = {}
 
-      if (req.header('Authorization')) {
+      if (req.header('Authorization') && !req?.query?.code) {
         await verifyToken(req, res)
         if (req.isBusiness) query = { business: req.userId }
         else query = { current: { $ne: allCurrent.PLANTING }, inspector: req.userId }
