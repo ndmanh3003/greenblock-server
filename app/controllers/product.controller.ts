@@ -164,10 +164,10 @@ export const productController = {
       let update = {}
 
       if (isBusiness) {
-        if (current && !roleCurrent.business.includes(current))
-          return res.status(400).json({ message: 'Invalid status' })
+        if (current && (!roleCurrent.business.includes(current) || inspector))
+          return res.status(400).json({ message: 'Invalid current' })
 
-        query = { business: userId }
+        query = { business: userId, ...(inspector ? { current: { $in: Object.values(roleCurrent.farmer) } } : {}) }
         update = { name, desc, current, quantityOut, inspector }
       } else {
         if (!current || !roleCurrent.inspector.includes(current))
