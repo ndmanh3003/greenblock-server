@@ -15,6 +15,7 @@ db()
 import { router } from './router'
 router(app)
 
-app.listen(process.env.PORT || 8080, () => {
-  console.log(`Server is running on port ${process.env.PORT || 8080}`)
+const port = parseInt(process.env.PORT || '8080', 10)
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server is running on port ${port}`)
 })
