@@ -22,6 +22,6 @@ export const keepAlive = async () => {
     () => {
       fetchUrls(urls).catch(() => {})
     },
-    parseInt(process.env.timeInterval || '300000', 10)
+    parseInt(process.env.PERIOD || '300000', 10)
   )
 }
