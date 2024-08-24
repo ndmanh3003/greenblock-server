@@ -4,6 +4,7 @@ import cors from 'cors'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
 import { db } from './plugins/db'
+import { keepAlive } from './utils'
 
 const app = express()
 app.use(bodyParser.json())
@@ -11,6 +12,7 @@ app.use(cors())
 app.use(morgan('dev'))
 dotenv.config()
 db()
+keepAlive()
 
 import { router } from './router'
 router(app)
