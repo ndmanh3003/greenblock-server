@@ -1,60 +1,45 @@
-## Project Setup Guide
+# 🌿 GreenBlock Backend
 
-Follow these steps to set up and run the project:
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000)
+![License: ISC](https://img.shields.io/badge/License-ISC-yellow.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D14.0.0-green.svg)
+
+## 🚀 Project Overview
+
+GreenBlock is a revolutionary platform designed to elevate traceability in modern industries. By harnessing the power of blockchain, our solution guarantees transparency and trust, enabling users to verify the origins and histories of products across various sectors.
+
+### 🌟 **Key Features**
+
+- 🔗 **Blockchain-Powered Traceability**: Maintain an immutable record of product data.
+- 🔍 **Instant Product Lookup**: Retrieve detailed product information instantly using an ID.
+- 📜 **Comprehensive Verification**: Access blockchain-stored certificates and smart contracts seamlessly.
+- 🤝 **Partnership Integration**: Effortless onboarding for businesses and inspectors.
+- 📊 **User-Friendly Dashboard**: Navigate and manage accounts with ease using an intuitive interface.
+
+By blending advanced technology with user-focused design, GreenBlock sets a new benchmark for product quality assurance and supply chain transparency.
+
+## 🛠️ Getting Started
 
 ### Prerequisites
 
-Ensure you have the following extensions installed:
+![Node.js](https://img.shields.io/badge/node-%3E%3D14.0.0-green.svg)
+![npm](https://img.shields.io/badge/npm-%3E%3D6.0.0-red.svg)
 
-- **ESLint**
-- **Prettier**
-- **EditorConfig**
+### Installation
 
-### Installation Steps
-
-1. **Install Dependencies**  
-   Run the following command to install the necessary dependencies:
-
-   ```bash
+1. Clone the repository
+   ```sh
+   git clone https://github.com/ndmanh3003/greenblock-server.git
+   ```
+2. Install NPM packages
+   ```sh
    npm install
    ```
-
-2. **Environment Variables**
-   Create a `.env` file in the root directory of the project and add the following variables:
-
-   ```env
-   MONGODB_URI=mongodb+srv://admin:<password>@mybookstore.kzlnu4p.mongodb.net/?retryWrites=true&w=majority&appName=MyBookStore
-   PI_URL="https://volta-rpc.energyweb.org/"
-   PRIVATE_KEY="7cb2bae51e4fc736989c78555ece5b230f11d0ac0763e39a8d45e8d7795aa***"
-   CONTRACT_ADDRESS="0x5C61ee90f5099a0A2a7a01093df0F05298324***"
-   ACCESS_TOKEN_SECRET=<password>
-   REFRESH_TOKEN_SECRET=<password>
-   ADMIN_PASSWORD=<password>
+3. Set up environment variables
+   ```sh
+   cp .env.example .env
    ```
-
-   Replace `<password>` with your actual MongoDB password.
-
-3. **Start the Project**
-   Start the project by running:
-
-   ```bash
-   npm start
+4. Start the development server
+   ```sh
+   npm run start
    ```
-
-## Convention
-
-Follow git commit message convention:
-
-```
-type(scope): message
-```
-
-Types include:
-
-- feat: new feature
-- fix: bug fix
-- docs: changes in documentation
-- style: everything related to styling
-- refactor: code changes that neither fixes a bug nor adds a feature
-- test: everything related to testing
-- chore: updating tasks, etc; no production code change
