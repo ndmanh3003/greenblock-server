@@ -210,16 +210,12 @@ export const productController = {
         product.quantityOut = null
         await product.save()
 
-        const existedLand = await Item.findOne({ _id: product.land, deleted: true })
-        if (!existedLand) {
-          const batch = await Batch.findOne({ business: businessId })
-          if (!batch) return
-
-          const index = batch.land.findIndex((l) => l.equals(product.land))
+        const existedLand = await Item.findOne({ _id: product.land })
+        if (existedLand) {
+          const index = existedLand.product.findIndex((p) => p.equals(product._id as Types.ObjectId))
           if (index !== -1) return
-          batch.land.push(new Types.ObjectId(product.land))
-
-          await batch.save()
+          existedLand.product.push(product._id as Types.ObjectId)
+          await existedLand.save()
         }
         return res.status(200).json({ message: 'Status deleted successfully' })
       }
