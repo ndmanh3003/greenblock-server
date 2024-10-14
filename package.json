@@ -8,10 +8,15 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "husky install"
   },
+  "_moduleAliases": {
+    "@": "."
+  },
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
     "@eslint/js": "^9.5.0",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.11",
@@ -43,26 +48,29 @@
     "solidity-coverage": "^0.8.12",
     "ts-node": "^10.9.2",
     "typechain": "^8.3.2",
-    "typescript": "^5.5.4",
     "typescript-eslint": "^7.14.1"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@openzeppelin/contracts": "^5.0.2",
+    "@types/module-alias": "^2.0.4",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "ethers": "^5.7.1",
     "express": "^4.19.2",
+    "express-async-errors": "^3.1.1",
     "express-fileupload": "^1.4.0",
     "hardhat": "^2.12.7",
     "joi": "^17.13.3",
     "jsonwebtoken": "^8.5.1",
+    "module-alias": "^2.2.3",
     "mongoose": "^8.4.4",
     "mongoose-delete": "^1.0.2",
     "morgan": "^1.10.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "typescript": "^5.6.3"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [

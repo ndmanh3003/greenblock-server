@@ -1,9 +1,10 @@
 import { Router } from 'express'
 const router = Router()
 
-import { productController } from '../app/controllers'
-import { isBusiness, validateSchema, verifyToken } from '../middleware'
-import * as schema from './product.schema'
+import productController from '@/controllers/product.controller'
+import * as schema from '@/routing/schemas/product.schema'
+import validateSchema from '@/middlewares/joi'
+import verifyToken, { isBusiness } from '@/middlewares/auth'
 
 router.post('/', isBusiness, validateSchema(schema.createProductSchema), productController.createProduct)
 router.put('/record/', validateSchema(schema.handleStatusSchema), productController.handleStatus)

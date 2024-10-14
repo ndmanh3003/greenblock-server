@@ -24,7 +24,8 @@ export const batchSchema = new Schema(
 )
 
 itemSchema.pre('save', function (next) {
-  if (this.type === 'variety' && (!this.metadata || this.metadata.quantity === undefined))
+  if (this.type === 'variety' && (!this.metadata || this.metadata.quantity === undefined)) {
     return next(new Error('Quantity is required for variety'))
+  }
   next()
 })

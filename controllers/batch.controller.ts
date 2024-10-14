@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Batch, IBatchPopulated, IBatch, Item, IItem } from '../models'
+import { Batch, IBatchPopulated, IBatch, Item, IItem } from '@/models'
 import { Types } from 'mongoose'
 
 export const findBatch = async (userId: string, isPopulated = false): Promise<IBatchPopulated | IBatch> => {
@@ -9,7 +9,9 @@ export const findBatch = async (userId: string, isPopulated = false): Promise<IB
     await batch.save()
   }
 
-  if (isPopulated) batch = await batch.populate('land variety')
+  if (isPopulated) {
+    batch = await batch.populate('land variety')
+  }
 
   return batch
 }
@@ -49,16 +51,20 @@ export const batchController = {
 
       const batch = (await findBatch(req.userId)) as IBatch
 
-      // Delete items that are not in the new list
-      const itemIdsToKeep = items.map((item) => item.itemId).filter((id) => !!id)
-      const itemsToRemove = await Item.find({ _id: { $nin: itemIdsToKeep }, type })
+      const deletedBatchItems = await Promise.all(
+        batch[type].map(async (exitItemId) => {
+          const isItemPresent = items.some((item) => item.itemId === exitItemId.toString())
 
-      for (const itemToRemove of itemsToRemove) {
-        const index = batch[type].findIndex((i) => i._id.equals(itemToRemove._id as Types.ObjectId))
-        if (index > -1) batch[type].splice(index, 1)
-        await itemToRemove.delete()
-      }
-      console.log(batch[type])
+          if (!isItemPresent) {
+            await Item.deleteOne({ _id: exitItemId })
+            return null
+          }
+
+          return exitItemId
+        })
+      )
+
+      batch[type] = deletedBatchItems.filter((item): item is Types.ObjectId => item !== null)
 
       for (const item of items) {
         if (item.itemId) {
@@ -75,7 +81,9 @@ export const batchController = {
           if (updatedItem?.deletedAt) {
             await updatedItem.restore() // Restore if deleted
             const id = updatedItem._id as Types.ObjectId
-            if (!batch[type].includes(id)) batch[type].push(id)
+            if (!batch[type].includes(id)) {
+              batch[type].push(id)
+            }
           }
         } else {
           // Create new item

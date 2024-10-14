@@ -46,6 +46,8 @@ productSchema.pre('findOneAndUpdate', async function () {
 
   if (update.current && roleCurrent.business.includes(update.current)) {
     const docToUpdate = (await this.model.findOne(this.getQuery())) as IProduct | null
-    if (docToUpdate && !docToUpdate.exportAt) update.exportAt = new Date()
+    if (docToUpdate && !docToUpdate.exportAt) {
+      update.exportAt = new Date()
+    }
   }
 })

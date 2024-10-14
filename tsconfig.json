@@ -2,13 +2,16 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "baseUrl": "src",
     "outDir": "dist",
     "sourceMap": true,
     "noImplicitAny": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "include": ["**/*"],
+  "include": ["**/*", "utils/transaction.ts"],
   "files": ["types.d.ts"]
 }

@@ -1,10 +1,15 @@
-import mongoose, { InferSchemaType } from 'mongoose'
+import mongoose, { InferSchemaType, Schema } from 'mongoose'
 import MongooseDelete, { SoftDeleteDocument, SoftDeleteModel } from 'mongoose-delete'
 import { authSchema } from './auth.model'
 import { productSchema } from './product.model'
 import { batchSchema, itemSchema } from './batch.model'
 
+const addTimestampsPlugin = (schema: Schema) => {
+  schema.set('timestamps', true)
+}
+
 mongoose.plugin(MongooseDelete, { deletedAt: true, overrideMethods: 'all' })
+mongoose.plugin(addTimestampsPlugin)
 
 export interface IAuth extends InferSchemaType<typeof authSchema>, SoftDeleteDocument {}
 export const Auth = mongoose.model<IAuth, SoftDeleteModel<IAuth>>('Auth', authSchema)

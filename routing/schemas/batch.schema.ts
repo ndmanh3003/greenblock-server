@@ -1,5 +1,5 @@
+import { objectIdValidator } from '@/middlewares/joi'
 import Joi from 'joi'
-import { objectIdValidator } from '../utils'
 
 const validTypes = ['land', 'variety']
 

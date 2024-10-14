@@ -1,11 +1,11 @@
+import { objectIdValidator } from '@/middlewares/joi'
 import Joi from 'joi'
-import { objectIdValidator } from '../utils'
 
 export const registerSchema = {
   body: Joi.object({
-    name: Joi.string().required(),
+    name: Joi.string().min(3).max(30).required(),
     email: Joi.string().email().required(),
-    password: Joi.string().min(6).required(),
+    password: Joi.string().min(6).max(128).required(),
     isBusiness: Joi.boolean().required(),
     cert: Joi.string().required()
   })
@@ -14,7 +14,7 @@ export const registerSchema = {
 export const loginSchema = {
   body: Joi.object({
     email: Joi.string().email().required(),
-    password: Joi.string().required(),
+    password: Joi.string().min(6).max(128).required(),
     isBusiness: Joi.boolean().required()
   })
 }
@@ -35,6 +35,6 @@ export const refreshTokenSchema = {
 export const getAllAccountsSchema = {
   query: Joi.object({
     type: Joi.string().valid('business', 'inspector').required(),
-    code: Joi.string().optional()
+    adminCode: Joi.string().optional()
   })
 }

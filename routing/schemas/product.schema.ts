@@ -1,6 +1,6 @@
 import Joi from 'joi'
-import { allCurrent } from '../app/models'
-import { objectIdValidator } from '../utils'
+import { allCurrent } from '@/models'
+import { objectIdValidator } from '@/middlewares/joi'
 
 export const createProductSchema = {
   body: Joi.object({

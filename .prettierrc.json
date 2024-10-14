@@ -9,5 +9,6 @@
   "trailingComma": "none",
   "useTabs": false,
   "printWidth": 120,
-  "semi": false
+  "semi": false,
+  "curly": "all"
 }

@@ -20,8 +20,16 @@ export default [
   eslintConfigPrettier,
   {
     rules: {
-      'no-unused-vars': 'error',
-      'no-undef': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          ignoreRestSiblings: true
+        }
+      ],
+      'no-undef': 'off',
       quotes: ['error', 'single'],
       'arrow-parens': ['error', 'always'],
       'computed-property-spacing': ['error', 'never'],
@@ -29,7 +37,41 @@ export default [
       'no-irregular-whitespace': 'error',
       indent: ['error', 2],
       'comma-dangle': ['error', 'never'],
-      semi: ['error', 'never']
+      semi: ['error', 'never'],
+      curly: ['error', 'all'],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-inferrable-types': 'error',
+      '@typescript-eslint/naming-convention': [
+        'error',
+        {
+          selector: 'interface',
+          format: ['PascalCase'],
+          custom: {
+            regex: '^I[A-Z]',
+            match: true
+          }
+        }
+      ],
+      '@typescript-eslint/member-delimiter-style': [
+        'error',
+        {
+          multiline: {
+            delimiter: 'none',
+            requireLast: false
+          },
+          singleline: {
+            delimiter: 'semi',
+            requireLast: false
+          }
+        }
+      ],
+      '@typescript-eslint/consistent-type-assertions': [
+        'error',
+        {
+          assertionStyle: 'as',
+          objectLiteralTypeAssertions: 'never'
+        }
+      ]
     }
   }
 ]
