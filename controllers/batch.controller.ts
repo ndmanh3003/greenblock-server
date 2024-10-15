@@ -21,7 +21,7 @@ export const batchController = {
     const filter: FilterQuery<IItem> = { businessId: req.userId, type: type as ItemType }
 
     if (filterBy && filterValue) {
-      filter[filterBy as keyof IItem] = filterValue
+      filter[filterBy as keyof IItem] = { $regex: filterValue as string, $options: 'i' }
     }
 
     const skip = (Number(page) - 1) * Number(limit)
