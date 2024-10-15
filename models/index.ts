@@ -11,22 +11,22 @@ const addTimestampsPlugin = (schema: Schema) => {
 mongoose.plugin(MongooseDelete, { deletedAt: true, overrideMethods: 'all' })
 mongoose.plugin(addTimestampsPlugin)
 
-export interface IAuth extends InferSchemaType<typeof authSchema>, SoftDeleteDocument {}
-export const Auth = mongoose.model<IAuth, SoftDeleteModel<IAuth>>('Auth', authSchema)
-
-export interface IProduct extends InferSchemaType<typeof productSchema>, SoftDeleteDocument {}
-export const Product = mongoose.model<IProduct, SoftDeleteModel<IProduct>>('Product', productSchema)
-
-export interface IItem extends InferSchemaType<typeof itemSchema>, SoftDeleteDocument {}
-export const Item = mongoose.model<IItem, SoftDeleteModel<IItem>>('Item', itemSchema)
-
-export interface IBatch extends InferSchemaType<typeof batchSchema>, SoftDeleteDocument {}
-export const Batch = mongoose.model<IBatch, SoftDeleteModel<IBatch>>('Batch', batchSchema)
-export interface IBatchPopulated extends Omit<IBatch, 'land' | 'variety'> {
-  land: IItem[]
-  variety: IItem[]
+function createModel<T extends Schema>(
+  name: string,
+  schema: T
+): SoftDeleteModel<InferSchemaType<T> & SoftDeleteDocument> {
+  type ModelType = InferSchemaType<T> & SoftDeleteDocument
+  return mongoose.model<ModelType, SoftDeleteModel<ModelType>>(name, schema)
 }
 
-export * from './auth.model'
-export * from './product.model'
-export * from './batch.model'
+export interface IAuth extends InferSchemaType<typeof authSchema>, SoftDeleteDocument {}
+export const Auth = createModel('Auth', authSchema)
+
+export interface IItem extends InferSchemaType<typeof itemSchema>, SoftDeleteDocument {}
+export const Item = createModel('Item', itemSchema)
+
+export interface IBatch extends InferSchemaType<typeof batchSchema>, SoftDeleteDocument {}
+export const Batch = createModel('Batch', batchSchema)
+
+export interface IProduct extends InferSchemaType<typeof productSchema>, SoftDeleteDocument {}
+export const Product = createModel('Product', productSchema)

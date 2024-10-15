@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { CustomHelpers, ObjectSchema } from 'joi'
 import { Types } from 'mongoose'
-import CustomErr from './errorHandler'
+import CustomError from './errorHandler'
 
 export default function validateSchema(schema: {
   body?: ObjectSchema
@@ -22,7 +22,7 @@ export default function validateSchema(schema: {
     })
 
     if (validationErrors.length > 0) {
-      throw new CustomErr(validationErrors.join(', '), 400)
+      throw new CustomError(validationErrors.join(', '), 400)
     }
 
     next()

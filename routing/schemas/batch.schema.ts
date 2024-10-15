@@ -1,39 +1,40 @@
 import { objectIdValidator } from '@/middlewares/joi'
+import { ItemType } from '@/models/batch.model'
 import Joi from 'joi'
-
-const validTypes = ['land', 'variety']
+import { Item } from './../../models/index'
 
 export const getAllItemsSchema = {
-  param: Joi.object({
+  query: Joi.object({
     type: Joi.string()
-      .valid(...validTypes)
-      .required()
+      .valid(...Object.values(ItemType))
+      .required(),
+    page: Joi.number().min(1).optional(),
+    limit: Joi.number().min(1).max(20).optional(),
+
+    sortBy: Joi.string()
+      .valid(...Object.values(Object.keys(Item.schema.paths)))
+      .optional(),
+    order: Joi.string().valid('asc', 'desc').optional(),
+
+    filterBy: Joi.string()
+      .valid(...Object.values(Object.keys(Item.schema.paths)))
+      .optional(),
+    filterValue: Joi.string().optional()
   })
 }
 
-export const updateAllItemsSchema = {
+export const updateItemSchema = {
   body: Joi.object({
     type: Joi.string()
-      .valid(...validTypes)
+      .valid(...Object.values(ItemType))
       .required(),
-    items: Joi.array()
-      .items(
-        Joi.object({
-          itemId: Joi.string().custom(objectIdValidator, 'valid ObjectId').optional(),
-          quantity: Joi.number().min(0).optional(),
-          name: Joi.string().when('itemId', {
-            is: Joi.exist(),
-            then: Joi.optional(),
-            otherwise: Joi.required()
-          })
-        })
-      )
-      .required()
+    _id: Joi.string().custom(objectIdValidator, 'valid ObjectId').optional(),
+    name: Joi.string().min(3).max(30).required()
   })
 }
 
 export const updateBatchCodeSchema = {
-  params: Joi.object({
-    code: Joi.string().required()
+  query: Joi.object({
+    code: Joi.string().min(3).max(30).required()
   })
 }

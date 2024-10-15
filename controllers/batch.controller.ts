@@ -1,121 +1,76 @@
-import { Request, Response } from 'express'
-import { Batch, IBatchPopulated, IBatch, Item, IItem } from '@/models'
-import { Types } from 'mongoose'
+import { Request } from 'express'
+import { Batch, IBatch, IItem, Item } from '@/models'
+import { FilterQuery, Types } from 'mongoose'
+import { ItemType } from '@/models/batch.model'
 
-export const findBatch = async (userId: string, isPopulated = false): Promise<IBatchPopulated | IBatch> => {
-  let batch = await Batch.findOne({ business: userId })
+export const getOrCreateBatch = async (userId: Types.ObjectId): Promise<IBatch> => {
+  let batch = await Batch.findById(userId)
   if (!batch) {
-    batch = new Batch({ business: userId })
+    const objectId = new Types.ObjectId(userId)
+    batch = new Batch({ _id: objectId })
     await batch.save()
-  }
-
-  if (isPopulated) {
-    batch = await batch.populate('land variety')
   }
 
   return batch
 }
 
 export const batchController = {
-  getAllItems: async (req: Request, res: Response) => {
-    try {
-      const { type } = req.params as { type: 'land' | 'variety' }
+  getAllItems: async (req: Request) => {
+    const { type, page = 1, limit = 10, sortBy, order = 'asc', filterBy, filterValue } = req.query
 
-      const batch = (await findBatch(req.userId, true)) as IBatchPopulated
-      const items = batch[type]
+    const filter: FilterQuery<IItem> = { businessId: req.userId, type: type as ItemType }
 
-      let additionalData = {}
-      if (type === 'land') {
-        const empty = items.filter((land) => !land.product.length).length
-        const planting = items.length - empty
-        additionalData = { empty, planting }
-      } else {
-        const empty = items.filter((variety) => variety.metadata.quantity === 0).length
-        const available = items.length - empty
-        additionalData = { empty, available }
-      }
+    if (filterBy && filterValue) {
+      filter[filterBy as keyof IItem] = filterValue
+    }
 
-      return res.status(200).json({
-        message: 'Items retrieved successfully',
-        data: { ...additionalData, items: items }
-      })
-    } catch (error) {
-      return res.status(500).json({ message: 'Failed to retrieve items', error: error.message })
+    const skip = (Number(page) - 1) * Number(limit)
+    const limitValue = Number(limit)
+
+    let sort = {}
+    if (sortBy) {
+      const sortOrder = order === 'asc' ? 1 : -1
+      sort = { [sortBy as string]: sortOrder }
+    }
+
+    const items = await Item.find(filter).sort(sort).skip(skip).limit(limitValue)
+    const totalItems = await Item.countDocuments(filter)
+
+    return {
+      totalItems,
+      items,
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limitValue)
     }
   },
 
-  updateAllItems: async (req: Request, res: Response) => {
-    try {
-      const type = req.body.type as 'land' | 'variety'
-      const items: { name?: string; quantity?: number; itemId?: string }[] = req.body.items
+  updateItem: async (req: Request) => {
+    const { type, _id, name } = req.body
 
-      const batch = (await findBatch(req.userId)) as IBatch
-
-      const deletedBatchItems = await Promise.all(
-        batch[type].map(async (exitItemId) => {
-          const isItemPresent = items.some((item) => item.itemId === exitItemId.toString())
-
-          if (!isItemPresent) {
-            await Item.deleteOne({ _id: exitItemId })
-            return null
-          }
-
-          return exitItemId
-        })
-      )
-
-      batch[type] = deletedBatchItems.filter((item): item is Types.ObjectId => item !== null)
-
-      for (const item of items) {
-        if (item.itemId) {
-          // Update existing item
-          const updatedItem: IItem = await Item.findOneAndUpdateWithDeleted(
-            { _id: item.itemId, type },
-            {
-              ...(item.name && { name: item.name }),
-              ...(type === 'variety' && item.quantity != undefined && { 'metadata.quantity': item.quantity || 0 })
-            },
-            { new: true, runValidators: true }
-          )
-
-          if (updatedItem?.deletedAt) {
-            await updatedItem.restore() // Restore if deleted
-            const id = updatedItem._id as Types.ObjectId
-            if (!batch[type].includes(id)) {
-              batch[type].push(id)
-            }
-          }
-        } else {
-          // Create new item
-          const newItem = new Item({
-            name: item.name,
-            type,
-            ...(type === 'variety' && { 'metadata.quantity': item.quantity || 0 })
-          })
-          await newItem.save()
-          batch[type].push(newItem._id as Types.ObjectId)
-        }
+    let item: IItem
+    if (_id) {
+      item = await Item.findById(_id)
+      if (!item) {
+        throw new Error('Item not found')
       }
-
-      await batch.save()
-
-      return res.status(200).json({ message: 'Items updated successfully' })
-    } catch (error) {
-      return res.status(500).json({ message: 'Failed to update items', error: error.message })
     }
+
+    item = item || new Item()
+    item.businessId = req.userId
+    item.type = type
+    item.name = name
+    await item.save()
   },
 
-  updateBatchCode: async (req: Request, res: Response) => {
-    try {
-      const { code } = req.params
+  getBatchCode: async (req: Request) => {
+    const batch = await getOrCreateBatch(req.userId)
+    return batch.code
+  },
 
-      const batch = await findBatch(req.userId)
-      batch.code = code
-      await batch.save()
-
-      return res.status(200).json({ message: 'Batch code updated successfully' })
-    } catch (error) {
-      return res.status(500).json({ message: 'Failed to update batch code', error: error.message })
-    }
+  updateBatchCode: async (req: Request) => {
+    const { code } = req.query
+    const batch = await getOrCreateBatch(req.userId)
+    batch.code = code as string
+    await batch.save()
   }
 }

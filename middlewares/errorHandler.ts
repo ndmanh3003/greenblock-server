@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from 'express'
 
-interface IErr {
+interface IError {
   statusCode?: number
   message?: string
 }
 
-export default class CustomErr extends Error {
+export default class CustomError extends Error {
   statusCode: number
   constructor(message: string, statusCode?: number) {
     super(message)
@@ -13,7 +13,7 @@ export default class CustomErr extends Error {
   }
 }
 
-export function errorHandler(err: IErr, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err: IError, _req: Request, res: Response, _next: NextFunction) {
   const statusCode = err.statusCode || 500
   const message = err.message || 'Internal Server Error'
   return res.status(statusCode).json({ message })
