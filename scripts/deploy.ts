@@ -8,12 +8,12 @@
 const hre = require('hardhat')
 
 async function main() {
-  const HistoryApi = await hre.ethers.getContractFactory('HistoryApi')
-  const HistoryApi_ = await HistoryApi.deploy()
+  const RecordApi = await hre.ethers.getContractFactory('RecordApi')
+  const RecordApi_ = await RecordApi.deploy()
 
-  await HistoryApi_.deployed()
+  await RecordApi_.deployed()
 
-  console.log(`Contract Address:  ${HistoryApi_.address}`)
+  console.log(`Contract Address:  ${RecordApi_.address}`)
 }
 
 // We recommend this pattern to be able to use async/await everywhere

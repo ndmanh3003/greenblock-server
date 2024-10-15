@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title HistoryApi
- * @dev A contract for managing product history records with status updates
+ * @title RecordApi
+ * @dev A contract for managing product records with status updates
  */
-contract HistoryApi {
+contract RecordApi {
   address public owner;
 
   struct Status {
@@ -18,6 +18,8 @@ contract HistoryApi {
     bool isHarvested;
     mapping(uint256 => Status) statuses;
     uint256 statusCount;
+    uint256 updatedAt;
+    uint256 createdAt;
   }
 
   Record[] public records;
@@ -49,11 +51,13 @@ contract HistoryApi {
     Record storage newRecord = records.push();
     newRecord.isHarvested = false;
     newRecord.statusCount = 0;
+    newRecord.updatedAt = block.timestamp;
+    newRecord.createdAt = block.timestamp;
     emit RecordCreated(records.length - 1);
   }
 
   /**
-   * @dev Adds a new status to a history record
+   * @dev Adds a new status to a record
    * @param recordId The ID of the record to update
    * @param desc The description of the new status
    * @param img An array of image URLs associated with the status
@@ -64,14 +68,18 @@ contract HistoryApi {
     Record storage record = records[recordId];
     require(!record.isHarvested, 'Product is already harvested');
 
-    if (isHarvested) record.isHarvested = true;
+    if (isHarvested) {
+      record.isHarvested = true;
+    }
 
     Status memory newStatus = Status({ time: block.timestamp, desc: desc, img: img });
     record.statuses[record.statusCount++] = newStatus;
+
+    record.updatedAt = block.timestamp;
   }
 
   /**
-   * @dev Removes the latest status from a history record
+   * @dev Removes the latest status from a record
    * @param recordId The ID of the record to update
    */
   function removeLatestStatus(uint256 recordId) public onlyOwner {
@@ -88,16 +96,18 @@ contract HistoryApi {
 
     delete record.statuses[latestStatusIndex];
     record.statusCount--;
+
+    record.updatedAt = block.timestamp;
   }
 
   /**
-   * @dev Retrieves all statuses of a history record
+   * @dev Retrieves all statuses of a record
    * @param recordId The ID of the record to query
    * @return _statuses An array of Status structs
    * @return isHarvested Whether the product is harvested
    * @return statusCount The number of statuses in the record
    */
-  function getRecord(
+  function getRecordDetail(
     uint256 recordId
   ) public view returns (Status[] memory _statuses, bool isHarvested, uint256 statusCount) {
     require(recordId < records.length, 'Record does not exist');
@@ -107,5 +117,22 @@ contract HistoryApi {
     for (uint256 i = 0; i < record.statusCount; i++) statuses[i] = record.statuses[i];
 
     return (statuses, record.isHarvested, record.statusCount);
+  }
+
+  /**
+   * @dev Retrieves a record without status details
+   * @param recordId The ID of the record to query
+   * @return isHarvested Whether the product is harvested
+   * @return statusCount The number of statuses in the record
+   * @return updatedAt The timestamp of the last status update
+   * @return createdAt The timestamp of the record creation
+   */
+  function getRecordSummary(
+    uint256 recordId
+  ) public view returns (bool isHarvested, uint256 statusCount, uint256 updatedAt, uint256 createdAt) {
+    require(recordId < records.length, 'Record does not exist');
+    Record storage record = records[recordId];
+
+    return (record.isHarvested, record.statusCount, record.updatedAt, record.createdAt);
   }
 }
