@@ -10,8 +10,6 @@ router.get('/item', isBusiness, validateSchema(schema.getAllItemsSchema), batchC
 
 router.put('/item', isBusiness, validateSchema(schema.updateItemSchema), batchController.updateItem)
 
-router.get('/code', isBusiness, batchController.getBatchCode)
-
 router.put('/code', isBusiness, validateSchema(schema.updateBatchCodeSchema), batchController.updateBatchCode)
 
 export default router

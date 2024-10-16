@@ -3,9 +3,9 @@ export interface IBigNumber {
 }
 
 export interface IStatus {
-  0: IBigNumber
-  1: string
-  2: string[]
+  time: IBigNumber
+  desc: string
+  img: string[]
 }
 
 export function toNumber(num: IBigNumber) {
@@ -18,13 +18,27 @@ export function toDate(timestamp: IBigNumber) {
 
 export function toStatus(_status: IStatus) {
   return {
-    time: toDate(_status[0]),
-    desc: _status[1],
-    img: _status[2]
+    time: toDate(_status.time),
+    desc: _status.desc,
+    img: _status.img
   }
 }
 
-export function toRecord(_record: { 0: IStatus[]; 1: boolean; 2: IBigNumber }) {
-  const record = _record[0].map((s) => toStatus(s))
+export function toRecord(_record: { statuses: IStatus[]; isHarvested: boolean; statusCount: IBigNumber }) {
+  const record = _record.statuses.map((s) => toStatus(s))
   return record
+}
+
+export function toInfo(_record: {
+  isHarvested: boolean
+  statusCount: IBigNumber
+  updatedAt: IBigNumber
+  createdAt: IBigNumber
+}) {
+  return {
+    isHarvested: _record.isHarvested,
+    statusCount: toNumber(_record.statusCount),
+    updatedAt: toDate(_record.updatedAt),
+    createdAt: toDate(_record.createdAt)
+  }
 }

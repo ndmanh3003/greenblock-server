@@ -1,304 +1,251 @@
-// import { Request, Response } from 'express'
-// import { IBigNumber, toNumber, toRecord } from '@/utils/blockchain'
-// import { Product, Batch, IProduct, Item } from '@/models'
-// import verifyToken from '@/middlewares/auth'
-// import contractInstance from '@/plugins/blockchain'
-// import { Types } from 'mongoose'
-// import { findBatch } from './batch.controller'
-// import { allCurrent, roleCurrent } from '@/models/product.model'
+import { Request } from 'express'
+import { IBigNumber, toInfo, toNumber, toRecord } from '@/utils/blockchain'
+import { Product, Batch, IProduct, Item } from '@/models'
+import verifyToken from '@/middlewares/auth'
+import contractInstance from '@/plugins/blockchain'
+import { FilterQuery } from 'mongoose'
+import { CurrentType, roleCurrent } from '@/models/product.model'
+import CustomError from '@/middlewares/errorHandler'
+import { ItemType } from '@/models/batch.model'
+import { getOrCreateBatch } from './batch.controller'
 
-// const verifyCode = async (code: string, businessId: string) => {
-//   const business = await Batch.findOne({ code, business: businessId })
-//   if (!business) {
-//     throw new Error('Invalid code')
-//   }
-// }
+const verifyCode = async (code: string, businessId: string) => {
+  const business = await Batch.findById(businessId)
+  if (!business || business.code != code) {
+    throw new CustomError('Invalid code', 400)
+  }
+}
 
-// const joinBatch = async (product: IProduct) => {
-//   const batch = await Batch.findOne({ business: product.business._id })
-//   if (!batch) {
-//     return
-//   }
+const productController = {
+  createProduct: async (req: Request) => {
+    const { name, varietyId, landId, inspectorId } = req.body
 
-//   const landBatch = await Item.findOneWithDeleted({ _id: product.land })
-//   if (!landBatch) {
-//     product.land = 'Not found'
-//   } else {
-//     product.land = landBatch.name + (landBatch.deleted ? ' (deleted)' : '')
-//   }
+    // check if variety and land exist
+    const isValidLand = await Item.findOne({ _id: landId, business: req.userId, type: ItemType.land })
+    if (!isValidLand) {
+      throw new CustomError('Invalid land', 400)
+    }
 
-//   const varietyBatch = await Item.findOneWithDeleted({ _id: product.variety })
-//   if (!varietyBatch) {
-//     product.variety = 'Not found'
-//   } else {
-//     product.variety = varietyBatch.name + (varietyBatch.deleted ? ' (deleted)' : '')
-//   }
-// }
+    const isValidVariety = await Item.findOne({ _id: varietyId, business: req.userId, type: ItemType.variety })
+    if (!isValidVariety) {
+      throw new CustomError('Invalid variety', 400)
+    }
 
-// const removeProductFromLand = async (product: IProduct) => {
-//   const landBatch = await Item.findById(product.land)
-//   if (!landBatch) {
-//     return
-//   }
+    // create record
+    const tx = await contractInstance.createRecord()
+    const receipt = await tx.wait()
+    const event = receipt.events.find(
+      (event: { event: string; args: { id: IBigNumber } }) => event.event === 'RecordCreated'
+    )
 
-//   const index = landBatch.product.findIndex((p) => p.equals(product._id as Types.ObjectId))
-//   if (index == -1) {
-//     return
-//   }
+    const newProduct = new Product({
+      name,
+      recordId: toNumber(event.args.id),
+      business: req.userId,
+      varietyId,
+      landId,
+      inspectorId
+    })
+    await newProduct.save()
+  },
 
-//   landBatch.product.splice(index, 1)
-//   await landBatch.save()
-// }
+  getAllProducts: async (req: Request) => {
+    const { code, businessId, page = 1, limit = 10, filterCurrent, searchValue } = req.query
 
-// const productController = {
-//   createProduct: async (req: Request, res: Response) => {
-//     try {
-//       const { name, variety, land, inspector, quantityIn } = req.body
+    const query: FilterQuery<IProduct> = {}
 
-//       // batch
-//       const batch = await Batch.findOne({ business: req.userId })
+    if (code) {
+      await verifyToken(req)
+      if (req.isBusiness) {
+        query.businessId = req.userId
+      } else {
+        query.current = { $ne: CurrentType.planting }
+        query.inspectorId = req.userId
+      }
 
-//       const landId = batch.land.find((l) => l == land)
-//       if (!landId) {
-//         return res.status(404).json({ message: 'Land not found' })
-//       }
-//       const landBatch = await Item.findById(land)
+      if (searchValue) {
+        query.name = { $regex: searchValue, $options: 'i' }
+      }
+      if (filterCurrent) {
+        query.current = { $in: filterCurrent, ...query.current }
+      }
 
-//       const varietyId = batch.variety.find((v) => v == variety)
-//       if (!varietyId) {
-//         return res.status(404).json({ message: 'Variety not found' })
-//       }
+      const skip = (Number(page) - 1) * Number(limit)
+      const limitValue = Number(limit)
 
-//       const varietyBatch = await Item.findById(variety)
-//       if (varietyBatch.metadata.quantity < quantityIn) {
-//         return res.status(400).json({ message: 'Variety not enough' })
-//       }
+      const products = await Product.find(query)
+        .skip(skip)
+        .limit(limitValue)
+        .populate('businessId', 'name')
+        .populate('inspectorId', 'name')
+        .select('name current businessId inspectorId')
 
-//       // record
-//       const tx = await contractInstance.createRecord()
-//       const receipt = await tx.wait()
-//       const event = receipt.events.find(
-//         (event: { event: string; args: { id: IBigNumber } }) => event.event === 'RecordCreated'
-//       )
-//       const newProduct = new Product({
-//         name,
-//         variety,
-//         land,
-//         business: req.userId,
-//         inspector,
-//         quantityIn,
-//         record: toNumber(event.args.id)
-//       })
-//       await newProduct.save()
+      const total = await Product.countDocuments(query)
 
-//       // batch
-//       landBatch.product.push(newProduct._id as Types.ObjectId)
-//       varietyBatch.product.push(newProduct._id as Types.ObjectId)
-//       varietyBatch.metadata.quantity -= quantityIn
-//       await batch.save()
-//       await landBatch.save()
-//       await varietyBatch.save()
+      return {
+        products,
+        totalProducts: total,
+        currentPage: page,
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limitValue)
+      }
+    } else {
+      await verifyCode(code as string, businessId as string)
+      query.businessId = businessId
+      query.current = { $in: Object.values(roleCurrent.farmer) }
 
-//       return res.status(200).json({ message: 'Product created successfully', data: newProduct })
-//     } catch (error) {
-//       return res.status(500).json({ message: 'Failed to create product', error: error.message })
-//     }
-//   },
+      const products = await Product.find(query).select('name')
 
-//   getAllProducts: async (req: Request, res: Response) => {
-//     try {
-//       let query = {}
+      return { products }
+    }
+  },
 
-//       if (req.header('Authorization') && !req?.query?.code) {
-//         await verifyToken(req)
-//         if (req.isBusiness) {
-//           query = { business: req.userId }
-//         } else {
-//           query = { current: { $ne: allCurrent.PLANTING }, inspector: req.userId }
-//         }
-//       } else {
-//         const { code, businessId } = req.query
-//         await verifyCode(code as string, businessId as string)
-//         query = {
-//           business: businessId,
-//           current: { $in: Object.values(roleCurrent.farmer) }
-//         }
-//       }
+  getProductDetail: async (req: Request) => {
+    const { productId } = req.params
+    let query = {}
 
-//       const products = await Product.find(query).populate('business', 'name').populate('inspector', 'name')
-//       await Promise.all(
-//         products.map(async (product: IProduct) => {
-//           await joinBatch(product)
-//         })
-//       )
+    if (req.header('Authorization')) {
+      await verifyToken(req)
+      if (req.isBusiness) {
+        query = { business: req.userId }
+      } else {
+        query = { current: { $ne: CurrentType.planting }, inspector: req.userId }
+      }
+    } else {
+      query = { current: { $in: Object.values(roleCurrent.customer) } }
+    }
 
-//       return res.status(200).json({ message: 'Products retrieved successfully', data: products })
-//     } catch (error) {
-//       return res.status(500).json({ message: 'Failed to retrieve products', error: error.message })
-//     }
-//   },
+    const product = await Product.findOne({ _id: productId, ...query })
+      .populate('businessId', 'name')
+      .populate('inspectorId', 'name')
+    if (!product) {
+      throw new CustomError('Product not found', 404)
+    }
 
-//   getProductDetails: async (req: Request, res: Response) => {
-//     try {
-//       const { productId } = req.params
-//       let query = {}
+    const record = await contractInstance.getRecordDetail(product.recordId)
 
-//       if (req.header('Authorization')) {
-//         await verifyToken(req)
-//         if (req.isBusiness) {
-//           query = { business: req.userId }
-//         } else {
-//           query = { current: { $ne: allCurrent.PLANTING }, inspector: req.userId }
-//         }
-//       } else {
-//         query = { current: { $in: Object.values(roleCurrent.business) } }
-//       }
+    return { ...product.toObject(), record: toRecord(record) }
+  },
 
-//       const product = await Product.findOne({ _id: productId, ...query })
-//         .populate('business', 'name')
-//         .populate('inspector', 'name')
-//       if (!product) {
-//         return res.status(404).json({ message: 'Product not found' })
-//       }
+  deleteProduct: async (req: Request) => {
+    const { productId } = req.params
+    const deletedProduct = await Product.findOne({ _id: productId, business: req.userId })
+    if (!deletedProduct) {
+      throw new CustomError('Product not found', 404)
+    }
 
-//       await joinBatch(product)
-//       const record = await contractInstance.getRecord(product.record)
+    await deletedProduct.delete()
+  },
 
-//       return res
-//         .status(200)
-//         .json({ message: 'Product retrieved successfully', data: { ...product.toObject(), record: toRecord(record) } })
-//     } catch (error) {
-//       return res.status(500).json({ message: 'Failed to retrieve product', error: error.message })
-//     }
-//   },
+  updateProduct: async (req: Request) => {
+    const { isBusiness, userId } = req
+    const { productId, name, desc, current, varietyId, landId, quality, cert } = req.body
+    let query = {}
+    let update = {}
 
-//   deleteProduct: async (req: Request, res: Response) => {
-//     try {
-//       const { productId } = req.params
-//       const deletedProduct = await Product.findOne({ _id: productId, business: req.userId })
-//       if (!deletedProduct) {
-//         return res.status(404).json({ message: 'Product not found' })
-//       }
+    if (isBusiness) {
+      if (current && !roleCurrent.customer.includes(current)) {
+        throw new CustomError('Invalid current', 400)
+      }
 
-//       await removeProductFromLand(deletedProduct)
-//       await deletedProduct.delete()
+      query = { businessId: userId }
+      update = { name, desc, current, varietyId, landId }
+    } else {
+      if (!current || !roleCurrent.inspector.includes(current)) {
+        throw new CustomError('Invalid current', 400)
+      }
 
-//       return res.status(200).json({ message: 'Product deleted successfully' })
-//     } catch (error) {
-//       return res.status(500).json({ message: 'Failed to delete product', error: error.message })
-//     }
-//   },
+      if (current == CurrentType.inspected && !cert && !quality) {
+        throw new CustomError('Quality and certificate are required', 400)
+      }
 
-//   updateProduct: async (req: Request, res: Response) => {
-//     try {
-//       const { isBusiness, userId } = req
-//       const { productId, name, desc, current, quantityOut, inspector, quality, cert } = req.body
-//       let query = {}
-//       let update = {}
+      // inspector can only update current when product is harvested or in the statuses of inspector
+      query = { inspectorId: userId, current: { $in: [CurrentType.harvested, ...roleCurrent.inspector] } }
+      update = { cert, quality, current }
+    }
 
-//       if (isBusiness) {
-//         if (current && (!roleCurrent.business.includes(current) || inspector)) {
-//           return res.status(400).json({ message: 'Invalid current' })
-//         }
+    // only update current when the product is not in the planting current, meaning after it harvested (this is done by the farmer).
+    const product = await Product.findOneAndUpdate(
+      { _id: productId, ...query, ...(current ? { current: { $ne: CurrentType.planting } } : {}) },
+      update
+    )
+    if (!product) {
+      throw new CustomError('Product not found or not allowed to update', 400)
+    }
+  },
 
-//         query = { business: userId, ...(inspector ? { current: { $in: Object.values(roleCurrent.farmer) } } : {}) }
-//         update = { name, desc, current, quantityOut, inspector }
-//       } else {
-//         if (!current || !roleCurrent.inspector.includes(current)) {
-//           return res.status(400).json({ message: 'Invalid status' })
-//         }
+  handleRecord: async (req: Request) => {
+    const { productId, code, businessId, isHarvested, img, desc } = req.body
+    await verifyCode(code, businessId)
 
-//         if (current == allCurrent.INSPECTED && !cert && !quality) {
-//           return res.status(400).json({ message: 'Cert and quality are required' })
-//         }
+    const product = await Product.findOne({
+      _id: productId,
+      business: businessId,
+      current: { $in: Object.values(roleCurrent.farmer) }
+    })
+    if (!product) {
+      throw new CustomError('Product not found', 404)
+    }
 
-//         query = { inspector: userId }
-//         update = { cert, quality, current }
-//       }
+    if (isHarvested == -1) {
+      // remove latest status
+      const record = await contractInstance.getRecordSummary(product.recordId)
+      const { statusCount, updatedAt } = toInfo(record)
 
-//       const product = await Product.findOneAndUpdate(
-//         { _id: productId, ...query, ...(current ? { current: { $ne: allCurrent.PLANTING } } : {}) },
-//         update
-//       )
-//       if (!product) {
-//         return res.status(404).json({ message: 'Product not found' })
-//       }
+      if (statusCount === 0) {
+        throw new CustomError('Do not have any status to delete', 400)
+      }
 
-//       return res.status(200).json({ message: 'Product updated successfully' })
-//     } catch (error) {
-//       return res.status(500).json({ message: 'Failed to update product', error: error.message })
-//     }
-//   },
+      const timeAllowed = new Date()
+      timeAllowed.setDate(timeAllowed.getDate() - 1)
+      if (updatedAt < timeAllowed) {
+        throw new CustomError('Cannot delete status after 24 hours', 400)
+      }
 
-//   handleStatus: async (req: Request, res: Response) => {
-//     try {
-//       const { isDelete, productId, img, desc, isHarvested, businessId, code, quantityOut } = req.body
-//       await verifyCode(code, businessId)
+      await contractInstance.removeLatestStatus(product.recordId)
+      product.current = CurrentType.planting
+      await product.save()
+    } else {
+      await contractInstance.addStatus(product.recordId, desc, img, Boolean(isHarvested))
 
-//       const product = await Product.findOne({
-//         _id: productId,
-//         business: businessId,
-//         current: { $in: Object.values(roleCurrent.farmer) }
-//       })
-//       if (!product) {
-//         return res.status(400).json({ message: 'Product not found or not in planting' })
-//       }
+      if (isHarvested) {
+        product.current = CurrentType.harvested
+      }
+      await product.save()
+    }
+  },
 
-//       if (isDelete) {
-//         await contractInstance.removeLatestStatus(product.record)
-//         product.current = allCurrent.PLANTING
-//         product.quantityOut = null
-//         await product.save()
+  getProductStatistics: async (req: Request) => {
+    const pipeline = [
+      { $match: { business: req.userId } },
+      {
+        $group: {
+          _id: null as unknown,
+          total: { $sum: 1 },
+          planting: { $sum: { $cond: [{ $eq: ['$current', CurrentType.planting] }, 1, 0] } },
+          harvested: { $sum: { $cond: [{ $eq: ['$current', CurrentType.harvested] }, 1, 0] } },
+          inspecting: { $sum: { $cond: [{ $eq: ['$current', CurrentType.inspecting] }, 1, 0] } },
+          inspected: { $sum: { $cond: [{ $eq: ['$current', CurrentType.inspected] }, 1, 0] } },
+          exported: { $sum: { $cond: [{ $eq: ['$current', CurrentType.exported] }, 1, 0] } },
+          sold: { $sum: { $cond: [{ $eq: ['$current', CurrentType.sold] }, 1, 0] } }
+        }
+      }
+    ]
 
-//         const existedLand = await Item.findOne({ _id: product.land })
-//         if (existedLand) {
-//           const index = existedLand.product.findIndex((p) => p.equals(product._id as Types.ObjectId))
-//           if (index !== -1) {
-//             return
-//           }
-//           existedLand.product.push(product._id as Types.ObjectId)
-//           await existedLand.save()
-//         }
-//         return res.status(200).json({ message: 'Status deleted successfully' })
-//       }
+    const [statistics] = await Product.aggregate(pipeline)
+    const batch = await getOrCreateBatch(req.userId)
 
-//       await contractInstance.addStatus(product.record, desc, img, isHarvested)
-//       if (isHarvested) {
-//         product.current = allCurrent.HARVESTED
-//         product.quantityOut = quantityOut
+    return {
+      total: statistics?.total || 0,
+      planting: statistics?.planting || 0,
+      harvested: statistics?.harvested || 0,
+      inspecting: statistics?.inspecting || 0,
+      inspected: statistics?.inspected || 0,
+      exported: statistics?.exported || 0,
+      sold: statistics?.sold || 0,
+      code: batch.code
+    }
+  }
+}
 
-//         await removeProductFromLand(product)
-//       }
-//       await product.save()
-
-//       return res.status(200).json({ message: 'Status added successfully' })
-//     } catch (error) {
-//       return res.status(500).json({ message: 'Failed to update status', error: error.message })
-//     }
-//   },
-
-//   getOverallProducts: async (req: Request, res: Response) => {
-//     try {
-//       const products = await Product.find({ business: req.userId })
-//       const batch = await findBatch(req.userId, false)
-
-//       return res.status(200).json({
-//         message: 'Overall products retrieved successfully',
-//         data: {
-//           total: products.length,
-//           planting: products.filter((p) => p.current == allCurrent.PLANTING).length,
-//           harvested: products.filter((p) => p.current == allCurrent.HARVESTED).length,
-//           inspecting: products.filter((p) => p.current == allCurrent.INSPECTING).length,
-//           inspected: products.filter((p) => p.current == allCurrent.INSPECTED).length,
-//           exported: products.filter((p) => p.current == allCurrent.EXPORTED).length,
-//           sold: products.filter((p) => p.current == allCurrent.SOLD).length,
-//           code: batch.code
-//         }
-//       })
-//     } catch (error) {
-//       return res.status(500).json({ message: 'Failed to retrieve overall products', error: error.message })
-//     }
-//   }
-// }
-
-// export default productController
+export default productController

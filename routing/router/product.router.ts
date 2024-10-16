@@ -1,17 +1,22 @@
 import { Router } from 'express'
 const router = Router()
 
-// import productController from '@/controllers/product.controller'
-// import * as schema from '@/routing/schemas/product.schema'
-// import validateSchema from '@/middlewares/joi'
-// import verifyToken, { isBusiness } from '@/middlewares/auth'
+import productController from '@/controllers/product.controller'
+import * as schema from '@/routing/schemas/product.schema'
+import validateSchema from '@/middlewares/joi'
+import verifyToken, { isBusiness } from '@/middlewares/auth'
 
-// router.post('/', isBusiness, validateSchema(schema.createProductSchema), productController.createProduct)
-// router.put('/record/', validateSchema(schema.handleStatusSchema), productController.handleStatus)
-// router.put('/', verifyToken, validateSchema(schema.updateProductSchema), productController.updateProduct)
-// router.delete('/:productId', isBusiness, validateSchema(schema.deleteProductSchema), productController.deleteProduct)
-// router.get('/', validateSchema(schema.getAllProductsSchema), productController.getAllProducts)
-// router.get('/overall', isBusiness, productController.getOverallProducts)
-// router.get('/:productId', validateSchema(schema.getProductDetailsSchema), productController.getProductDetails)
+router.post('/', isBusiness, validateSchema(schema.createProductSchema), productController.createProduct)
 
+router.delete('/:productId', isBusiness, validateSchema(schema.deleteProductSchema), productController.deleteProduct)
+
+router.put('/', verifyToken, validateSchema(schema.updateProductSchema), productController.updateProduct)
+
+router.get('/all', validateSchema(schema.getAllProductsSchema), productController.getAllProducts)
+
+router.get('/statistics', isBusiness, productController.getProductStatistics)
+
+router.get('/:productId', validateSchema(schema.getProductDetailSchema), productController.getProductDetail)
+
+router.put('/record', validateSchema(schema.handleRecordSchema), productController.handleRecord)
 export default router

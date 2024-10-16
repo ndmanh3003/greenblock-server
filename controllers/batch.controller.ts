@@ -2,6 +2,7 @@ import { Request } from 'express'
 import { Batch, IBatch, IItem, Item } from '@/models'
 import { FilterQuery, Types } from 'mongoose'
 import { ItemType } from '@/models/batch.model'
+import CustomError from '@/middlewares/errorHandler'
 
 export const getOrCreateBatch = async (userId: Types.ObjectId): Promise<IBatch> => {
   let batch = await Batch.findById(userId)
@@ -51,7 +52,7 @@ export const batchController = {
     if (_id) {
       item = await Item.findById(_id)
       if (!item) {
-        throw new Error('Item not found')
+        throw new CustomError('Item not found', 404)
       }
     }
 
@@ -60,11 +61,6 @@ export const batchController = {
     item.type = type
     item.name = name
     await item.save()
-  },
-
-  getBatchCode: async (req: Request) => {
-    const batch = await getOrCreateBatch(req.userId)
-    return batch.code
   },
 
   updateBatchCode: async (req: Request) => {
