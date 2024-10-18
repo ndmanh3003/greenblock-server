@@ -16,7 +16,7 @@ const verifyCode = async (code: string, businessId: string) => {
   }
 }
 
-const productController = {
+const rawProductController = {
   createProduct: async (req: Request) => {
     const { name, varietyId, landId, inspectorId } = req.body
 
@@ -55,7 +55,7 @@ const productController = {
     const query: FilterQuery<IProduct> = {}
 
     if (code) {
-      await verifyToken(req)
+      await verifyToken(req, null, null)
       if (req.isBusiness) {
         query.businessId = req.userId
       } else {
@@ -105,7 +105,7 @@ const productController = {
     let query = {}
 
     if (req.header('Authorization')) {
-      await verifyToken(req)
+      await verifyToken(req, null, null)
       if (req.isBusiness) {
         query = { business: req.userId }
       } else {
@@ -118,6 +118,8 @@ const productController = {
     const product = await Product.findOne({ _id: productId, ...query })
       .populate('businessId', 'name')
       .populate('inspectorId', 'name')
+      .populate('varietyId', 'name')
+      .populate('landId', 'name')
     if (!product) {
       throw new CustomError('Product not found', 404)
     }
@@ -248,4 +250,4 @@ const productController = {
   }
 }
 
-export default productController
+export default rawProductController

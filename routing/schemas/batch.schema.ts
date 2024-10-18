@@ -34,7 +34,7 @@ export const updateItemSchema = {
 }
 
 export const updateBatchCodeSchema = {
-  query: Joi.object({
-    code: Joi.string().min(3).max(30).required()
+  params: Joi.object({
+    code: Joi.string().min(5).max(30).required()
   })
 }

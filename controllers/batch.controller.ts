@@ -15,7 +15,7 @@ export const getOrCreateBatch = async (userId: Types.ObjectId): Promise<IBatch> 
   return batch
 }
 
-export const batchController = {
+const rawBatchController = {
   getAllItems: async (req: Request) => {
     const { type, page = 1, limit = 10, sortBy, order = 'asc', filterBy, filterValue } = req.query
 
@@ -64,9 +64,11 @@ export const batchController = {
   },
 
   updateBatchCode: async (req: Request) => {
-    const { code } = req.query
+    const { code } = req.params
     const batch = await getOrCreateBatch(req.userId)
     batch.code = code as string
     await batch.save()
   }
 }
+
+export default rawBatchController

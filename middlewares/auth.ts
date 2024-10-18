@@ -1,4 +1,4 @@
-import { Request } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { Auth, IAuth } from '@/models'
 import CustomError from './errorHandler'
@@ -17,7 +17,7 @@ export async function decodeToken(token: string) {
   }) as unknown as { _id: string; email: string }
 }
 
-export default async function verifyToken(req: Request) {
+export default async function verifyToken(req: Request, res: Response, next: NextFunction | null) {
   const authHeader = req.header('Authorization')
   const token = authHeader && authHeader.split(' ')[1]
 
@@ -39,20 +39,26 @@ export default async function verifyToken(req: Request) {
     throw new CustomError('Invalid token', 401)
   }
   req.isBusiness = account.isBusiness
+
+  return next && next()
 }
 
-export const isBusiness = async (req: Request) => {
-  await verifyToken(req)
+export const isBusiness = async (req: Request, res: Response, next: NextFunction) => {
+  await verifyToken(req, null, null)
   if (!req.isBusiness) {
     throw new CustomError('Permission denied', 403)
   }
+
+  return next()
 }
 
-export const isInspector = async (req: Request) => {
-  await verifyToken(req)
+export const isInspector = async (req: Request, res: Response, next: NextFunction) => {
+  await verifyToken(req, null, next)
   if (req.isBusiness) {
     throw new CustomError('Permission denied', 403)
   }
+
+  return next()
 }
 
 export async function refreshTokens(account: IAuth) {

@@ -12,5 +12,5 @@ export const itemSchema = new Schema({
 })
 
 export const batchSchema = new Schema({
-  code: { type: String, default: '123', minlength: 3, maxlength: 30 }
+  code: { type: String, default: '12345', minlength: 5, maxlength: 30 }
 })

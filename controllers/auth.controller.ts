@@ -99,6 +99,7 @@ const rawAuthController = {
   },
 
   getDetail: async (req: Request) => {
+    console.log(11111)
     const account = await Auth.findById(req.userId)
     if (!account) {
       throw new CustomError('Account not found', 400)

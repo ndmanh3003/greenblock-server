@@ -1,16 +1,16 @@
 import { Router } from 'express'
 const router = Router()
 
-import verifyToken from '@/middlewares/auth'
 import validateSchema from '@/middlewares/joi'
 import * as schema from '@/routing/schemas/auth.schema'
 import { authController } from '@/controllers'
+import verifyToken from '@/middlewares/auth'
 
 router.post('/register', validateSchema(schema.registerSchema), authController.register)
 
 router.post('/login', validateSchema(schema.loginSchema), authController.login)
 
-router.get('/getAll', validateSchema(schema.getAllAccountsSchema), authController.getAllAccounts)
+router.get('/all', validateSchema(schema.getAllAccountsSchema), authController.getAllAccounts)
 
 router.put('/verify', validateSchema(schema.verifyAccountSchema), authController.verifyAccount)
 
