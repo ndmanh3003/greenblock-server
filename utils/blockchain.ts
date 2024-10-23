@@ -8,6 +8,19 @@ export interface IStatus {
   img: string[]
 }
 
+export interface IInfo {
+  isHarvested: boolean
+  statusCount: IBigNumber
+  updatedAt: IBigNumber
+  createdAt: IBigNumber
+}
+
+export interface IRecord {
+  _statuses: IStatus[]
+  isHarvested: boolean
+  statusCount: IBigNumber
+}
+
 export function toNumber(num: IBigNumber) {
   return parseInt(num._hex)
 }
@@ -24,21 +37,15 @@ export function toStatus(_status: IStatus) {
   }
 }
 
-export function toRecord(_record: { statuses: IStatus[]; isHarvested: boolean; statusCount: IBigNumber }) {
-  const record = _record.statuses.map((s) => toStatus(s))
-  return record
+export function toRecord(record: IRecord) {
+  return record._statuses.map((s) => toStatus(s))
 }
 
-export function toInfo(_record: {
-  isHarvested: boolean
-  statusCount: IBigNumber
-  updatedAt: IBigNumber
-  createdAt: IBigNumber
-}) {
+export function toInfo(record: IInfo) {
   return {
-    isHarvested: _record.isHarvested,
-    statusCount: toNumber(_record.statusCount),
-    updatedAt: toDate(_record.updatedAt),
-    createdAt: toDate(_record.createdAt)
+    isHarvested: record.isHarvested,
+    statusCount: toNumber(record.statusCount),
+    updatedAt: toDate(record.updatedAt),
+    createdAt: toDate(record.createdAt)
   }
 }

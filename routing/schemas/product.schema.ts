@@ -39,8 +39,8 @@ export const getAllProductsSchema = {
     code: Joi.string().optional(),
     businessId: Joi.string().custom(objectIdValidator, 'valid ObjectId').when('code', {
       is: Joi.exist(),
-      then: Joi.forbidden(),
-      otherwise: Joi.required()
+      then: Joi.required(),
+      otherwise: Joi.forbidden()
     }),
 
     page: Joi.number().min(1).optional(),

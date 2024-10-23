@@ -19,4 +19,5 @@ router.get('/statistics', isBusiness, productController.getProductStatistics)
 router.get('/:productId', validateSchema(schema.getProductDetailSchema), productController.getProductDetail)
 
 router.put('/record', validateSchema(schema.handleRecordSchema), productController.handleRecord)
+
 export default router

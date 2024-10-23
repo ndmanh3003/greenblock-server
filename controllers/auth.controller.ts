@@ -53,11 +53,7 @@ const rawAuthController = {
       query = { isVerified: true }
     }
 
-    const accounts = (await Auth.find({ ...query, isBusiness })).map((account) => {
-      const { password, refreshToken, ...data } = account.toObject()
-      return data
-    })
-
+    const accounts = await Auth.find({ ...query, isBusiness }).select('name email cert isBusiness')
     return accounts
   },
 
@@ -99,14 +95,12 @@ const rawAuthController = {
   },
 
   getDetail: async (req: Request) => {
-    console.log(11111)
-    const account = await Auth.findById(req.userId)
+    const account = await Auth.findById(req.userId).select('name email cert isBusiness')
     if (!account) {
       throw new CustomError('Account not found', 400)
     }
 
-    const { password, refreshToken, ...data } = account.toObject()
-    return data
+    return account
   }
 }
 

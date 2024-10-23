@@ -19,7 +19,7 @@ const rawBatchController = {
   getAllItems: async (req: Request) => {
     const { type, page = 1, limit = 10, sortBy, order = 'asc', filterBy, filterValue } = req.query
 
-    const filter: FilterQuery<IItem> = { businessId: req.userId, type: type as ItemType }
+    const filter: FilterQuery<IItem> = { business: req.userId, type: type as ItemType }
 
     if (filterBy && filterValue) {
       filter[filterBy as keyof IItem] = { $regex: filterValue as string, $options: 'i' }
@@ -34,7 +34,7 @@ const rawBatchController = {
       sort = { [sortBy as string]: sortOrder }
     }
 
-    const items = await Item.find(filter).sort(sort).skip(skip).limit(limitValue)
+    const items = await Item.find(filter).sort(sort).skip(skip).limit(limitValue).select('name')
     const totalItems = await Item.countDocuments(filter)
 
     return {
@@ -50,14 +50,14 @@ const rawBatchController = {
 
     let item: IItem
     if (_id) {
-      item = await Item.findById(_id)
+      item = await Item.findOne({ _id, business: req.userId })
       if (!item) {
         throw new CustomError('Item not found', 404)
       }
     }
 
     item = item || new Item()
-    item.businessId = req.userId
+    item.business = req.userId
     item.type = type
     item.name = name
     await item.save()

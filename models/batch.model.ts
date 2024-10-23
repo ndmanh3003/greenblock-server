@@ -8,7 +8,7 @@ export enum ItemType {
 export const itemSchema = new Schema({
   type: { type: String, required: true, enum: Object.values(ItemType) },
   name: { type: String, required: true, minlength: 3, maxlength: 30 },
-  businessId: { type: Schema.Types.ObjectId, ref: 'Auth', required: true }
+  business: { type: Schema.Types.ObjectId, ref: 'Auth', required: true }
 })
 
 export const batchSchema = new Schema({

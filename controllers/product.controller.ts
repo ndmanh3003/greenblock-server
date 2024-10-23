@@ -1,6 +1,6 @@
 import { Request } from 'express'
 import { IBigNumber, toInfo, toNumber, toRecord } from '@/utils/blockchain'
-import { Product, Batch, IProduct, Item } from '@/models'
+import { Product, Batch, IProduct, Item, Auth } from '@/models'
 import verifyToken from '@/middlewares/auth'
 import contractInstance from '@/plugins/blockchain'
 import { FilterQuery } from 'mongoose'
@@ -20,15 +20,19 @@ const rawProductController = {
   createProduct: async (req: Request) => {
     const { name, varietyId, landId, inspectorId } = req.body
 
-    // check if variety and land exist
-    const isValidLand = await Item.findOne({ _id: landId, business: req.userId, type: ItemType.land })
-    if (!isValidLand) {
-      throw new CustomError('Invalid land', 400)
+    const isValidInspector = await Auth.findOne({ _id: inspectorId, isBusiness: false })
+    if (!isValidInspector) {
+      throw new CustomError('Invalid inspector', 400)
     }
 
     const isValidVariety = await Item.findOne({ _id: varietyId, business: req.userId, type: ItemType.variety })
     if (!isValidVariety) {
       throw new CustomError('Invalid variety', 400)
+    }
+
+    const isValidLand = await Item.findOne({ _id: landId, business: req.userId, type: ItemType.land })
+    if (!isValidLand) {
+      throw new CustomError('Invalid land', 400)
     }
 
     // create record
@@ -40,11 +44,11 @@ const rawProductController = {
 
     const newProduct = new Product({
       name,
-      recordId: toNumber(event.args.id),
+      record: toNumber(event.args.id),
       business: req.userId,
-      varietyId,
-      landId,
-      inspectorId
+      variety: varietyId,
+      land: landId,
+      inspector: inspectorId
     })
     await newProduct.save()
   },
@@ -54,13 +58,13 @@ const rawProductController = {
 
     const query: FilterQuery<IProduct> = {}
 
-    if (code) {
+    if (!code) {
       await verifyToken(req, null, null)
       if (req.isBusiness) {
-        query.businessId = req.userId
+        query.business = req.userId
       } else {
         query.current = { $ne: CurrentType.planting }
-        query.inspectorId = req.userId
+        query.inspector = req.userId
       }
 
       if (searchValue) {
@@ -76,9 +80,9 @@ const rawProductController = {
       const products = await Product.find(query)
         .skip(skip)
         .limit(limitValue)
-        .populate('businessId', 'name')
-        .populate('inspectorId', 'name')
-        .select('name current businessId inspectorId')
+        .populate('business', 'name')
+        .populate('inspector', 'name')
+        .select('name current business inspector')
 
       const total = await Product.countDocuments(query)
 
@@ -91,7 +95,7 @@ const rawProductController = {
       }
     } else {
       await verifyCode(code as string, businessId as string)
-      query.businessId = businessId
+      query.business = businessId
       query.current = { $in: Object.values(roleCurrent.farmer) }
 
       const products = await Product.find(query).select('name')
@@ -116,16 +120,15 @@ const rawProductController = {
     }
 
     const product = await Product.findOne({ _id: productId, ...query })
-      .populate('businessId', 'name')
-      .populate('inspectorId', 'name')
-      .populate('varietyId', 'name')
-      .populate('landId', 'name')
+      .populate('business', 'name')
+      .populate('inspector', 'name')
+      .populate('variety', 'name')
+      .populate('land', 'name')
     if (!product) {
       throw new CustomError('Product not found', 404)
     }
 
-    const record = await contractInstance.getRecordDetail(product.recordId)
-
+    const record = await contractInstance.getRecordDetail(product.record)
     return { ...product.toObject(), record: toRecord(record) }
   },
 
@@ -150,8 +153,8 @@ const rawProductController = {
         throw new CustomError('Invalid current', 400)
       }
 
-      query = { businessId: userId }
-      update = { name, desc, current, varietyId, landId }
+      query = { business: userId }
+      update = { name, desc, current, variety: varietyId, land: landId }
     } else {
       if (!current || !roleCurrent.inspector.includes(current)) {
         throw new CustomError('Invalid current', 400)
@@ -162,7 +165,7 @@ const rawProductController = {
       }
 
       // inspector can only update current when product is harvested or in the statuses of inspector
-      query = { inspectorId: userId, current: { $in: [CurrentType.harvested, ...roleCurrent.inspector] } }
+      query = { inspector: userId, current: { $in: [CurrentType.harvested, ...roleCurrent.inspector] } }
       update = { cert, quality, current }
     }
 
@@ -191,7 +194,7 @@ const rawProductController = {
 
     if (isHarvested == -1) {
       // remove latest status
-      const record = await contractInstance.getRecordSummary(product.recordId)
+      const record = await contractInstance.getRecordSummary(4)
       const { statusCount, updatedAt } = toInfo(record)
 
       if (statusCount === 0) {
@@ -204,11 +207,15 @@ const rawProductController = {
         throw new CustomError('Cannot delete status after 24 hours', 400)
       }
 
-      await contractInstance.removeLatestStatus(product.recordId)
+      await contractInstance.removeLatestStatus(product.record)
       product.current = CurrentType.planting
       await product.save()
     } else {
-      await contractInstance.addStatus(product.recordId, desc, img, Boolean(isHarvested))
+      if (product.current === CurrentType.harvested) {
+        throw new CustomError('Product already harvested', 400)
+      }
+
+      await contractInstance.addStatus(product.record, desc, img, Boolean(isHarvested))
 
       if (isHarvested) {
         product.current = CurrentType.harvested
