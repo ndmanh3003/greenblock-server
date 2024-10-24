@@ -9,7 +9,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'greenblock',
+    folder: process.env.CLOUDINARY_FOLDER,
     allowed_formats: ['jpg', 'png', 'jpeg'],
     resource_type: 'auto',
     transformation: [{ quality: 50 }]
