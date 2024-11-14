@@ -20,9 +20,6 @@ export const updateProductSchema = {
       .valid(...Object.values(CurrentType))
       .optional(),
 
-    varietyId: Joi.string().custom(objectIdValidator, 'valid ObjectId').optional(),
-    landId: Joi.string().custom(objectIdValidator, 'valid ObjectId').optional(),
-
     quality: Joi.number().min(0).max(5).optional(),
     cert: Joi.string().optional()
   })
@@ -47,7 +44,7 @@ export const getAllProductsSchema = {
     limit: Joi.number().min(1).max(20).optional(),
 
     filterCurrent: Joi.array()
-      .items(Joi.valid(Joi.string().valid(...Object.values(CurrentType))))
+      .items(Joi.string().valid(...Object.values(CurrentType)))
       .optional(),
 
     searchValue: Joi.string().optional()

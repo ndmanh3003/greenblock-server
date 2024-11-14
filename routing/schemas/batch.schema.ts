@@ -29,7 +29,7 @@ export const updateItemSchema = {
       .valid(...Object.values(ItemType))
       .required(),
     _id: Joi.string().custom(objectIdValidator, 'valid ObjectId').optional(),
-    name: Joi.string().min(3).max(30).required()
+    name: Joi.string().min(3).max(30).optional()
   })
 }
 

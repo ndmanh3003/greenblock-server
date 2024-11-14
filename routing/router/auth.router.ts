@@ -18,6 +18,6 @@ router.delete('/logout', verifyToken, authController.logout)
 
 router.post('/refresh/:refreshToken', validateSchema(schema.refreshTokenSchema), authController.refreshToken)
 
-router.get('/detail', verifyToken, authController.getDetail)
+router.get('/getme', verifyToken, authController.getme)
 
 export default router

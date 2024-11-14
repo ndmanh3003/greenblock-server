@@ -8,7 +8,7 @@ import dotenv from 'dotenv'
 import router from '@/routing/router'
 import db from '@/plugins/database'
 import { errorHandler } from '@/middlewares/errorHandler'
-import parser from '@/plugins/cloudinary'
+import cloudinary from '@/plugins/cloudinary'
 
 const app = express()
 app.use(bodyParser.json())
@@ -19,10 +19,7 @@ dotenv.config()
 db()
 router(app)
 app.use(errorHandler)
-
-app.post('/upload', parser.single('image'), (req, res) => {
-  res.json(req.file)
-})
+cloudinary(app)
 
 const port = parseInt(process.env.PORT || '8080', 10)
 app.listen(port, '0.0.0.0', () => {

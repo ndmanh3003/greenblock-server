@@ -94,7 +94,7 @@ const rawAuthController = {
     return tokens
   },
 
-  getDetail: async (req: Request) => {
+  getme: async (req: Request) => {
     const account = await Auth.findById(req.userId).select('name email cert isBusiness')
     if (!account) {
       throw new CustomError('Account not found', 400)

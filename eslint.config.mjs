@@ -38,7 +38,7 @@ export default [
       indent: ['error', 2],
       'comma-dangle': ['error', 'never'],
       semi: ['error', 'never'],
-      curly: ['error', 'all'],
+      curly: 'error',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-inferrable-types': 'error',
       '@typescript-eslint/naming-convention': [

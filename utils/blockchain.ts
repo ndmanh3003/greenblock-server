@@ -12,7 +12,6 @@ export interface IInfo {
   isHarvested: boolean
   statusCount: IBigNumber
   updatedAt: IBigNumber
-  createdAt: IBigNumber
 }
 
 export interface IRecord {
@@ -45,7 +44,6 @@ export function toInfo(record: IInfo) {
   return {
     isHarvested: record.isHarvested,
     statusCount: toNumber(record.statusCount),
-    updatedAt: toDate(record.updatedAt),
-    createdAt: toDate(record.createdAt)
+    updatedAt: toDate(record.updatedAt)
   }
 }

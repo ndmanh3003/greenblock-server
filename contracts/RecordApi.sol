@@ -18,8 +18,6 @@ contract RecordApi {
     bool isHarvested;
     mapping(uint256 => Status) statuses;
     uint256 statusCount;
-    uint256 updatedAt;
-    uint256 createdAt;
   }
 
   Record[] public records;
@@ -51,8 +49,6 @@ contract RecordApi {
     Record storage newRecord = records.push();
     newRecord.isHarvested = false;
     newRecord.statusCount = 0;
-    newRecord.updatedAt = block.timestamp;
-    newRecord.createdAt = block.timestamp;
     emit RecordCreated(records.length - 1);
   }
 
@@ -74,8 +70,6 @@ contract RecordApi {
 
     Status memory newStatus = Status({ time: block.timestamp, desc: desc, img: img });
     record.statuses[record.statusCount++] = newStatus;
-
-    record.updatedAt = block.timestamp;
   }
 
   /**
@@ -96,8 +90,6 @@ contract RecordApi {
 
     delete record.statuses[latestStatusIndex];
     record.statusCount--;
-
-    record.updatedAt = block.timestamp;
   }
 
   /**
@@ -125,14 +117,19 @@ contract RecordApi {
    * @return isHarvested Whether the product is harvested
    * @return statusCount The number of statuses in the record
    * @return updatedAt The timestamp of the last status update
-   * @return createdAt The timestamp of the record creation
    */
   function getRecordSummary(
     uint256 recordId
-  ) public view returns (bool isHarvested, uint256 statusCount, uint256 updatedAt, uint256 createdAt) {
+  ) public view returns (bool isHarvested, uint256 statusCount, uint256 updatedAt) {
     require(recordId < records.length, 'Record does not exist');
     Record storage record = records[recordId];
 
-    return (record.isHarvested, record.statusCount, record.updatedAt, record.createdAt);
+    if (record.statusCount > 0) {
+      updatedAt = record.statuses[record.statusCount - 1].time;
+    } else {
+      updatedAt = 0;
+    }
+
+    return (record.isHarvested, record.statusCount, updatedAt);
   }
 }

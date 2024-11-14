@@ -89,7 +89,7 @@ const rawProductController = {
       return {
         products,
         totalProducts: total,
-        currentPage: page,
+        currentPage: Number(page),
         limit: Number(limit),
         totalPages: Math.ceil(total / limitValue)
       }
@@ -98,7 +98,7 @@ const rawProductController = {
       query.business = businessId
       query.current = { $in: Object.values(roleCurrent.farmer) }
 
-      const products = await Product.find(query).select('name')
+      const products = await Product.find(query).select('name current')
 
       return { products }
     }
@@ -144,7 +144,7 @@ const rawProductController = {
 
   updateProduct: async (req: Request) => {
     const { isBusiness, userId } = req
-    const { productId, name, desc, current, varietyId, landId, quality, cert } = req.body
+    const { productId, name, desc, current, quality, cert } = req.body
     let query = {}
     let update = {}
 
@@ -154,7 +154,7 @@ const rawProductController = {
       }
 
       query = { business: userId }
-      update = { name, desc, current, variety: varietyId, land: landId }
+      update = { name, desc, current }
     } else {
       if (!current || !roleCurrent.inspector.includes(current)) {
         throw new CustomError('Invalid current', 400)
@@ -169,11 +169,7 @@ const rawProductController = {
       update = { cert, quality, current }
     }
 
-    // only update current when the product is not in the planting current, meaning after it harvested (this is done by the farmer).
-    const product = await Product.findOneAndUpdate(
-      { _id: productId, ...query, ...(current ? { current: { $ne: CurrentType.planting } } : {}) },
-      update
-    )
+    const product = await Product.findOneAndUpdate({ _id: productId, ...query }, update)
     if (!product) {
       throw new CustomError('Product not found or not allowed to update', 400)
     }
@@ -194,7 +190,7 @@ const rawProductController = {
 
     if (isHarvested == -1) {
       // remove latest status
-      const record = await contractInstance.getRecordSummary(4)
+      const record = await contractInstance.getRecordSummary(product.record)
       const { statusCount, updatedAt } = toInfo(record)
 
       if (statusCount === 0) {

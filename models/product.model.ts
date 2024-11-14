@@ -24,8 +24,8 @@ export const productSchema = new Schema({
 
   // batch
   business: { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
-  variety: { type: String, required: true },
-  land: { type: String, required: true },
+  variety: { type: Schema.Types.ObjectId, ref: 'Item', required: true },
+  land: { type: Schema.Types.ObjectId, ref: 'Item', required: true },
 
   // inspector
   inspector: { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
