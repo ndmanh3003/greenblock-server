@@ -21,7 +21,7 @@ router(app)
 app.use(errorHandler)
 cloudinary(app)
 
-const port = parseInt(process.env.PORT || '8080', 10)
-app.listen(port, '0.0.0.0', () => {
+const port = parseInt(process.env.PORT || '4000', 10)
+app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })

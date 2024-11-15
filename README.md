@@ -10,13 +10,9 @@ GreenBlock is a revolutionary platform designed to elevate traceability in moder
 
 ### 🌟 **Key Features**
 
-- 🔗 **Blockchain-Powered Traceability**: Maintain an immutable record of product data.
-- 🔍 **Instant Product Lookup**: Retrieve detailed product information instantly using an ID.
-- 📜 **Comprehensive Verification**: Access blockchain-stored certificates and smart contracts seamlessly.
-- 🤝 **Partnership Integration**: Effortless onboarding for businesses and inspectors.
-- 📊 **User-Friendly Dashboard**: Navigate and manage accounts with ease using an intuitive interface.
-
-By blending advanced technology with user-focused design, GreenBlock sets a new benchmark for product quality assurance and supply chain transparency.
+- 🌐 **Complete Transparency**: Provides comprehensive information, from growing conditions to certifications and the product's journey.
+- 🔒 **Data Security**: Blockchain technology ensures data integrity, preventing fraud.
+- 🚜 **Empowering Farmers**: Enables farmers to share their products with high transparency, offering businesses and consumers peace of mind.
 
 ## 🛠️ Getting Started
 
@@ -34,6 +30,7 @@ By blending advanced technology with user-focused design, GreenBlock sets a new 
 2. Install NPM packages
    ```sh
    npm install
+   npx hardhat compile
    ```
 3. Set up environment variables
    ```sh
