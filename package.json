@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --inspector index.js",
+    "dev": "ts-node index.ts",
     "format": "lint-staged",
     "build:contract": "npx hardhat compile && npx hardhat run --network volta scripts/deploy.ts",
     "test": "echo \"Error: no test specified\" && exit 1",

@@ -38,5 +38,5 @@ GreenBlock is a revolutionary platform designed to elevate traceability in moder
    ```
 4. Start the development server
    ```sh
-   npm run start
+   npm run dev
    ```
